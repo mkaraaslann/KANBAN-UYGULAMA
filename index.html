@@ -158,6 +158,20 @@ h1,h2,h3{margin:.2em 0 .4em}
 @keyframes shk{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .warn{background:#fff3cd;border:1px solid #f0d58a;color:#6d5000;border-radius:10px;padding:8px 12px;font-size:.88em}
 
+.stc .pt{font-size:.8em;color:var(--ink);line-height:1.3}
+.stc .pt .mut{font-size:.9em}
+.rb{display:inline-block;background:#ffe3e3;color:#a31b1b;font-size:.62em;font-weight:800;padding:2px 6px;border-radius:5px;vertical-align:middle}
+.rbt{color:#a31b1b}
+.spdw{display:inline-flex;align-items:center;gap:2px;font-weight:700}
+.spdw button{padding:.3em .55em;font-size:.85em;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:8px}
+.spdw button.on{background:var(--ink);color:#fff}
+.badge.trial{background:#6b4fc4}
+.prule.trial{background:#6b4fc4}
+.task svg{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.pulse{animation:pulse .8s ease-in-out infinite}
+.ph{overscroll-behavior:none}
+details summary{list-style:revert}
+
 /* ---------- karşılaştırma ekranı ---------- */
 .cmpT{font-size:1.5em;font-weight:800;margin:2px 0 12px}
 .cmpT small{display:block;font-size:.55em;font-weight:500;color:var(--mut);margin-top:2px}
@@ -188,14 +202,14 @@ h1,h2,h3{margin:.2em 0 .4em}
 .snap.p{background:#fdf1f1;border:1px solid #f3c9c9}.snap.k{background:#eef8f4;border:1px solid #bfe6d6}
 .snap .tag{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:900;color:#fff;border-radius:6px;padding:6px 3px;align-self:stretch;text-align:center;font-size:.8em}
 .snap.p .tag{background:var(--push)}.snap.k .tag{background:var(--kan)}
-.snap .sn{min-width:66px;text-align:center;font-size:.72em;font-weight:700;background:#fff;border:2px solid var(--line);border-radius:8px;padding:4px 3px;line-height:1.2}
+.snap .sn{min-width:0;flex:1 1 0;text-align:center;font-size:.72em;font-weight:700;background:#fff;border:2px solid var(--line);border-radius:8px;padding:4px 3px;line-height:1.2}
 .snap .sn.bt{border-color:#1b2130}
-.snap .pile{min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.snap .pile{min-width:0;flex:0 0 40px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
 .snap .pile .n{font-weight:900;font-size:1.05em}
 .snap .pile .n.hot{color:var(--push)}
-.snap .pile .st{display:flex;flex-wrap:wrap-reverse;width:44px;gap:1px;justify-content:center}
+.snap .pile .st{display:flex;flex-wrap:wrap-reverse;width:40px;gap:1px;justify-content:center}
 .snap .pile .st i{width:9px;height:7px;background:#c49a5a;border:1px solid #8d6a33;border-radius:1px}
-.snap .end{min-width:64px;flex-shrink:0;text-align:center;font-size:.72em;font-weight:700}
+.snap .end{min-width:0;flex:0 0 58px;text-align:center;font-size:.72em;font-weight:700}
 .snap .end b{display:block;font-size:1.5em}
 .msgs{margin:0;padding-left:1.1em;line-height:1.45}
 .msgs li{margin:.35em 0}
@@ -220,13 +234,15 @@ const BROKERS = [
   {name:'Mosquitto', url:'wss://test.mosquitto.org:8081/mqtt'}
 ];
 const LIB = {
-  kesim:  {name:'Kesim',            icon:'✂️', targets:2, mt:0.6, task:'Kesim noktalarına sırayla dokun'},
-  delme:  {name:'Delme',            icon:'🔩', targets:3, mt:1.0, task:'Delik noktalarına sırayla dokun'},
-  kaynak: {name:'Kaynak',           icon:'🔥', targets:3, mt:1.0, task:'Kaynak noktalarına sırayla dokun'},
-  montaj: {name:'Montaj',           icon:'🔧', targets:3, mt:1.0, task:'Vidaları sırayla tak'},
-  kalite: {name:'Kalite Kontrol',   icon:'🔍', targets:3, mt:0.8, task:'Kontrol noktalarını sırayla onayla'},
-  paket:  {name:'Paketleme & Sevk', icon:'📦', targets:2, mt:0.8, task:'Koli bandı noktalarına dokun'}
+  // op = operatörden beklenen el işi süresi (sn, plan) · mt = makine süresi (sn)
+  kesim:  {name:'Kesim',            icon:'✂️', type:'cut',     op:1.5, mt:0.5, task:'Kesik çizgi boyunca parmağını kaydır'},
+  delme:  {name:'Delme',            icon:'🔩', type:'hold',    op:2.5, mt:1.0, task:'Deliklere sırayla basılı tut, halka dolunca bırak'},
+  kaynak: {name:'Kaynak',           icon:'🔥', type:'trace',   op:3.0, mt:1.0, task:'Dikiş hattını parmağınla baştan sona takip et'},
+  montaj: {name:'Montaj',           icon:'🔧', type:'drag',    op:3.0, mt:1.0, task:'Vidaları sürükleyip deliklere yerleştir'},
+  kalite: {name:'Kalite Kontrol',   icon:'🔍', type:'inspect', op:2.0, mt:0.8, task:'Dört parçadan kusurlu olanı bul ve dokun'},
+  paket:  {name:'Paketleme & Sevk', icon:'📦', type:'pack',    op:3.0, mt:0.8, task:'Ürünü koliye sürükle, sonra bandı çek'}
 };
+const SPEEDS = [1,2,4,8,16];
 const LINES = {
   4:['kesim','delme','kaynak','paket'],
   5:['kesim','delme','kaynak','montaj','paket'],
@@ -323,7 +339,7 @@ function lineChart(cv, series, o){
   const X = x => L + (x/xm)*(w-L-R), Y = y => h-B - (y/ym)*(h-T-B);
   ctx.font = '12px system-ui,sans-serif'; ctx.fillStyle = '#667085'; ctx.strokeStyle = '#e8eaee'; ctx.lineWidth = 1;
   const ys = niceStep(ym,4);
-  for (let v=0; v<=ym+1e-9; v+=ys){ ctx.beginPath(); ctx.moveTo(L,Y(v)); ctx.lineTo(w-R,Y(v)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText(Math.round(v), L-6, Y(v)+4); }
+  for (let v=0; v<=ym+1e-9; v+=ys){ ctx.beginPath(); ctx.moveTo(L,Y(v)); ctx.lineTo(w-R,Y(v)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText((Math.round(v*10)/10).toLocaleString('tr-TR'), L-6, Y(v)+4); }
   const xs = niceStep(xm,6);
   ctx.textAlign='center';
   for (let v=0; v<=xm+1e-9; v+=xs){ ctx.fillText(Math.round(v), X(v), h-B+15); }
@@ -354,7 +370,8 @@ function barChart(cv, cats, series, o){
   const L=40, R=8, T=26, B=34, ym = o.yMax || 100;
   const Y = y => h-B - (y/ym)*(h-T-B);
   ctx.font='12px system-ui,sans-serif'; ctx.fillStyle='#667085'; ctx.strokeStyle='#e8eaee';
-  for (let v=0; v<=ym; v+=ym/4){ ctx.beginPath(); ctx.moveTo(L,Y(v)); ctx.lineTo(w-R,Y(v)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText(Math.round(v)+(o.unit||''), L-5, Y(v)+4); }
+  const bs = niceStep(ym,4);
+  for (let v=0; v<=ym+1e-9; v+=bs){ ctx.beginPath(); ctx.moveTo(L,Y(v)); ctx.lineTo(w-R,Y(v)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText((Math.round(v*10)/10).toLocaleString('tr-TR')+(o.unit||''), L-5, Y(v)+4); }
   const gw = (w-L-R)/cats.length, bw = Math.min(26, (gw-10)/Math.max(1,series.length));
   cats.forEach((c,i)=>{
     const gx = L + i*gw + (gw - bw*series.length)/2;
@@ -406,7 +423,8 @@ function startHost(b){
   H = {
     b, code, players:{}, assign:[null,null,null,null,null,null], forceBot:[false,false,false,false,false,false],
     settings:{n:5, bott:2, bt:7, round:240, K:1, mode:'push'},
-    phase:'lobby', sim:null, rounds:[], cdEnd:0, conn:{s:'wait',m:'…'}, lastPub:0, dirty:true, lastTick:Date.now(), view:''
+    phase:'lobby', sim:null, rounds:[], cdEnd:0, conn:{s:'wait',m:'…'}, lastPub:0, dirty:true, view:'',
+    speed:1, sBase:Date.now(), rBase:Date.now()
   };
   H.tr = createTransport(b, code, ['act','state'], hostOnMsg, (s,m)=>{ H.conn={s,m}; H.dirty=true; });
   setInterval(hostTick, 100);
@@ -416,9 +434,16 @@ function startHost(b){
   hostRender();
 }
 const now = () => Date.now();
+// Oyun saati: hız düğmeleri yalnızca bu saati hızlandırır, tüm ölçümler oyun saatiyle yapılır.
+function simNow(){ return H.sBase + (Date.now() - H.rBase) * H.speed; }
+function setSpeed(x){
+  H.sBase = simNow(); H.rBase = Date.now(); H.speed = x;
+  if (x>1 && H.sim && H.phase==='run') H.sim.accel = true;
+  H.dirty = true;
+}
 function lineKeys(n){ return LINES[n || (H.sim ? H.sim.n : H.settings.n)]; }
 function isOnline(pid){ const p = H.players[pid]; return p && (now() - p.last) < OFFLINE_MS; }
-function isBot(j){ const pid = H.assign[j]; return H.forceBot[j] || !pid || !isOnline(pid); }
+function isBot(j){ const pid = H.assign[j]; return H.speed>1 || H.forceBot[j] || !pid || !isOnline(pid); }
 function normalizeAssign(){
   const n = H.settings.n;
   for (let j=n; j<6; j++){ const pid = H.assign[j]; if (pid){ H.assign[j]=null; if (H.players[pid]) H.players[pid].st=null; } }
@@ -455,27 +480,30 @@ function hostOnMsg(sub, m){
       H.assign[j] = p.pid; p.st = j; H.dirty = true; break;
     }
     case 'start': {
-      if (H.phase!=='run' || !S) break;
+      if (H.phase!=='run' || !S || H.speed>1) break;
       const j = p.st; if (j==null || j!==m.st || H.forceBot[j]) break;
-      if (canStart(S,j)) { simStart(S,j,now()); H.dirty=true; }
+      if (canStart(S,j)) { simStart(S,j,S.cur); H.dirty=true; }
       break;
     }
     case 'done': {
-      if (H.phase!=='run' || !S) break;
+      if (H.phase!=='run' || !S || H.speed>1) break;
       const j = p.st; if (j==null || j!==m.st) break;
-      if (simDone(S,j,m.u,now())) H.dirty=true;
+      if (simDone(S,j,m.u,S.cur)) H.dirty=true;
       break;
     }
   }
 }
 
 /* ---------------- Simülasyon çekirdeği ---------------- */
-function newSim(){
+// Not: simülasyon kendi saatiyle (simNow) çalışır; hız düğmeleri bu saati hızlandırır.
+function newSim(trial){
   const s = H.settings, keys = LINES[s.n];
   return {
-    mode:s.mode, K:s.K, n:s.n, bott:s.bott, bt:s.bt, dur:s.round*1000, keys,
-    st: keys.map((k,j)=>({key:k, mt:(j===s.bott ? s.bt : LIB[k].mt), targets:LIB[k].targets, job:null, busy:0, count:0, botAt:0, starvedMs:0, blockedMs:0})),
-    buf: keys.map(()=>[]), maxBuf: keys.map(()=>0), nextId:1, released:0, shipped:[], wipS:[], t0:0, end:0, lastSample:0, lastT:0
+    trial:!!trial, accel:false, mode: trial ? 'push' : s.mode, K:s.K, n:s.n, bott:s.bott, bt:s.bt,
+    dur:(trial ? 60 : s.round)*1000, keys,
+    st: keys.map((k,j)=>({key:k, op:LIB[k].op, mt:(j===s.bott ? s.bt : LIB[k].mt), job:null, busy:0, count:0, botAt:0,
+      starvedMs:0, blockedMs:0, opSum:0, opN:0, ctSum:0})),
+    buf: keys.map(()=>[]), maxBuf: keys.map(()=>0), nextId:1, released:0, shipped:[], wipS:[], t0:0, end:0, lastSample:0, lastT:0, cur:0
   };
 }
 function canStart(S,j){
@@ -495,74 +523,88 @@ function stStatus(S,j){
 function simStart(S,j,t){
   const unit = j===0 ? {id:S.nextId++, rel:t} : S.buf[j-1].shift();
   if (j===0) S.released++;
-  S.st[j].job = {u:unit, ph:'m', t, e:0, d:0, bm:0};
+  S.st[j].job = {u:unit, ph:'m', t, e:0, d:0, bm:0, md:0};
 }
 function simDone(S,j,uid,t){
-  const job = S.st[j].job;
+  const st = S.st[j], job = st.job;
   if (!job || job.ph!=='m') return false;
   if (uid!=null && uid!==job.u.id) return false;
-  job.ph='x'; job.d = S.st[j].mt * rnd(0.9,1.1) * 1000; job.e = t + job.d;
+  job.ph='x'; job.md = t; job.d = st.mt * rnd(0.9,1.1) * 1000; job.e = t + job.d;
+  st.opSum += t - job.t; st.opN++;
   return true;
 }
+function measOf(S){ return S.st.map(st=> st.count ? st.ctSum/st.count/1000 : NaN); }
+function realBott(meas, counts){ let b=-1, m=-1; meas.forEach((v,j)=>{ if (counts[j]>=2 && v>m){ m=v; b=j; } }); return b; }
+function simStep(S, t){
+  const te = Math.min(t, S.end), dt = te - S.lastT;
+  for (let j=0;j<S.n;j++){ const ss = stStatus(S,j); if (ss==='starved') S.st[j].starvedMs += dt; else if (ss==='blocked') S.st[j].blockedMs += dt; }
+  S.lastT = te;
+  let changed = false;
+  // tamamlanan makine işleri
+  for (let j=0;j<S.n;j++){
+    const st = S.st[j], job = st.job;
+    if (job && job.ph==='x' && te >= job.e){
+      st.busy += job.e - job.t; st.ctSum += job.e - job.t; st.count++;
+      if (j===S.n-1) S.shipped.push({id:job.u.id, rel:job.u.rel, ship:job.e, lt:job.e - job.u.rel});
+      else { S.buf[j].push(job.u); if (S.buf[j].length > S.maxBuf[j]) S.maxBuf[j] = S.buf[j].length; }
+      st.job = null; changed = true;
+    }
+  }
+  // botlar (operatör süresi: planlanan süre ± insan değişkenliği)
+  if (te < S.end){
+    for (let j=0;j<S.n;j++){
+      const st = S.st[j];
+      if (!isBot(j)) { st.botAt = 0; continue; }
+      if (!st.job){
+        if (canStart(S,j)){
+          if (!st.botAt) st.botAt = te + rnd(250,700);
+          else if (te >= st.botAt){ simStart(S,j,te); st.botAt = 0; changed = true; }
+        } else st.botAt = 0;
+      }
+      if (st.job && st.job.ph==='m'){
+        if (!st.job.bm) st.job.bm = te + st.op*1000*rnd(0.8,1.35);
+        if (te >= st.job.bm){ simDone(S,j,null,te); changed = true; }
+      }
+    }
+  }
+  if (te - S.lastSample >= 1000){ S.lastSample = te; S.wipS.push([(te-S.t0)/1000, S.released - S.shipped.length]); }
+  if (changed) H.dirty = true;
+  if (t >= S.end) finishRound();
+}
 function hostTick(){
-  const t = now();
-  if (H.phase==='cd' && t >= H.cdEnd){
-    const S = H.sim; S.t0 = t; S.end = t + S.dur; S.lastT = t; S.lastSample = t; S.wipS.push([0,0]);
+  const rt = now();
+  if (H.phase==='cd' && rt >= H.cdEnd){
+    const S = H.sim, t = simNow(); S.t0 = t; S.end = t + S.dur; S.lastT = t; S.lastSample = t; S.cur = t; S.wipS.push([0,0]);
     H.phase='run'; H.dirty=true;
   }
   if (H.phase==='run'){
-    const S = H.sim, te = Math.min(t, S.end), dt = te - S.lastT;
-    // durum süreleri
-    for (let j=0;j<S.n;j++){ const ss = stStatus(S,j); if (ss==='starved') S.st[j].starvedMs += dt; else if (ss==='blocked') S.st[j].blockedMs += dt; }
-    S.lastT = te;
-    // tamamlanan makine işleri
-    let changed = false;
-    for (let j=0;j<S.n;j++){
-      const st = S.st[j], job = st.job;
-      if (job && job.ph==='x' && te >= job.e){
-        st.busy += job.e - job.t; st.count++;
-        if (j===S.n-1) S.shipped.push({id:job.u.id, rel:job.u.rel, ship:job.e, lt:job.e - job.u.rel});
-        else { S.buf[j].push(job.u); if (S.buf[j].length > S.maxBuf[j]) S.maxBuf[j] = S.buf[j].length; }
-        st.job = null; changed = true;
-      }
-    }
-    // botlar
-    if (te < S.end){
-      for (let j=0;j<S.n;j++){
-        if (!isBot(j)) { S.st[j].botAt = 0; continue; }
-        const st = S.st[j];
-        if (!st.job){
-          if (canStart(S,j)){
-            if (!st.botAt) st.botAt = t + rnd(250,700);
-            else if (t >= st.botAt){ simStart(S,j,t); st.botAt = 0; changed = true; }
-          } else st.botAt = 0;
-        }
-        if (st.job && st.job.ph==='m'){
-          if (!st.job.bm) st.job.bm = t + st.targets*rnd(650,950);
-          if (t >= st.job.bm){ simDone(S,j,null,t); changed = true; }
-        }
-      }
-    }
-    if (te - S.lastSample >= 1000){ S.lastSample = te; S.wipS.push([(te-S.t0)/1000, S.released - S.shipped.length]); }
-    if (changed) H.dirty = true;
-    if (t >= S.end) finishRound();
+    const S = H.sim, target = simNow();
+    let guard = 0;
+    // yüksek hızda bile 50 ms'lik oyun adımlarıyla ilerle → x1 ile x16 aynı sonucu verir
+    while (H.phase==='run' && S.cur < target && guard++ < 4000){ S.cur = Math.min(target, S.cur + 50); simStep(S, S.cur); }
   }
-  // yayın
   const running = H.phase==='run' || H.phase==='cd';
-  if ((H.dirty && t - H.lastPub >= 150) || t - H.lastPub >= (running ? 450 : 1200)){
-    H.lastPub = t; H.dirty = false;
+  if ((H.dirty && rt - H.lastPub >= 150) || rt - H.lastPub >= (running ? 450 : 1200)){
+    H.lastPub = rt; H.dirty = false;
     try { H.tr.pub('state', hostState(), true); } catch(e){}
   }
 }
 function finishRound(){
   const S = H.sim, T = S.dur/1000;
   S.st.forEach(st=>{ if (st.job){ st.busy += Math.max(0, S.end - st.job.t); } });
+  const meas = measOf(S), counts = S.st.map(st=>st.count);
+  if (S.trial){
+    H.lastTrial = {names:S.keys.map(k=>LIB[k].name), meas, counts, op:S.st.map(st=>st.opN ? st.opSum/st.opN/1000 : NaN), realB:realBott(meas, counts), accel:S.accel};
+    H.phase = H.rounds.length ? 'res' : 'lobby'; H.view = ''; H.dirty = true;
+    if (H.speed !== 1) setSpeed(1);
+    return;
+  }
   const sh = S.shipped, lts = sh.map(x=>x.lt/1000);
   const avgWip = mean(S.wipS.map(x=>x[1]));
   const th = sh.length / (T/60);
   const last5 = mean(lts.slice(-5));
   const stats = {
-    idx:H.rounds.length+1, mode:S.mode, K:S.K, n:S.n, bott:S.bott, bt:S.bt, T,
+    idx:H.rounds.length+1, mode:S.mode, K:S.K, n:S.n, bott:S.bott, bt:S.bt, T, accel:S.accel,
     names:S.keys.map(k=>LIB[k].name),
     shipped:sh.length, released:S.released, endWip:S.released - sh.length, avgWip, th,
     avgLT:mean(lts), last5, maxLT:lts.length? Math.max(...lts):NaN,
@@ -571,11 +613,13 @@ function finishRound(){
     starved:S.st.map(st=>st.starvedMs/S.dur*100), blocked:S.st.map(st=>st.blockedMs/S.dur*100),
     wipS:S.wipS.slice(), ltS:sh.map(x=>[(x.ship-S.t0)/1000, x.lt/1000]),
     endBuf:S.buf.map(x=>x.length), endProc:S.st.map(st=>st.job?1:0), maxBuf:S.maxBuf.slice(),
-    counts:S.st.map(st=>st.count), waitPM: avgWip*T/60
+    counts, waitPM: avgWip*T/60,
+    plan:S.st.map(st=>st.op + st.mt), meas, opMeas:S.st.map(st=>st.opN ? st.opSum/st.opN/1000 : NaN), realB:realBott(meas, counts)
   };
-  stats.label = 'Tur ' + stats.idx + ': ' + (S.mode==='push' ? 'İtme' : 'Kanban K=' + S.K);
+  stats.label = 'Tur ' + stats.idx + ': ' + (S.mode==='push' ? 'İtme' : 'Kanban K=' + S.K) + (S.accel ? ' ⚡' : '');
   H.rounds.push(stats);
   H.phase = 'res'; H.dirty = true;
+  if (H.speed !== 1) setSpeed(1);
   if (S.mode==='push') H.settings.mode = 'kanban';
   if (S.mode==='kanban' && H.rounds.some(r=>r.mode==='push')){
     H.cmpK = H.rounds.length-1; H.cmpP = lastIdx('push'); H.showCmp = true;
@@ -585,20 +629,23 @@ function finishRound(){
 }
 function lastIdx(mode){ for (let i=H.rounds.length-1;i>=0;i--) if (H.rounds[i].mode===mode) return i; return -1; }
 function canCompare(){ return lastIdx('push')>=0 && lastIdx('kanban')>=0; }
-function hostStartRound(){
+function hostStartRound(trial){
   normalizeAssign();
-  H.sim = newSim(); H.phase='cd'; H.cdEnd = now()+3000; H.dirty = true;
+  if (H.speed !== 1) setSpeed(1);   // her tur x1 ile başlar
+  H.sim = newSim(trial === true); H.phase='cd'; H.cdEnd = now()+3000; H.dirty = true;
 }
 function hostState(){
-  const t = now(), S = H.sim, live = (H.phase==='run' || H.phase==='cd') && S;
+  const t = simNow(), rt = now(), S = H.sim, live = (H.phase==='run' || H.phase==='cd') && S;
   const n = live ? S.n : H.settings.n, keys = LINES[n];
-  const o = {v:1, now:t, ph:H.phase, n, keys, mode: live ? S.mode : H.settings.mode, K: live ? S.K : H.settings.K, bott: live ? S.bott : H.settings.bott,
-    rem: H.phase==='run' ? S.end - t : H.phase==='cd' ? H.cdEnd - t : 0, rd: H.rounds.length + (live ? 1 : 0)};
+  const o = {v:1, now:t, sp:H.speed, ph:H.phase, n, keys, mode: live ? S.mode : H.settings.mode, K: live ? S.K : H.settings.K, bott: live ? S.bott : H.settings.bott,
+    tr: live && S.trial ? 1 : 0,
+    rem: H.phase==='run' ? S.end - t : H.phase==='cd' ? H.cdEnd - rt : 0, rd: H.rounds.length + (live ? 1 : 0)};
   o.as = keys.map((k,j)=>{
     const pid = H.assign[j], p = pid && H.players[pid], st = live ? S.st[j] : null;
     return {p:pid||null, pn:p ? p.name : '', bot:isBot(j), fb:H.forceBot[j],
       j: st && st.job ? {ph:st.job.ph, u:st.job.u.id, e:st.job.e, d:st.job.d} : null,
-      c: st ? st.count : 0, mt: j===o.bott ? (live ? S.bt : H.settings.bt) : LIB[k].mt};
+      c: st ? st.count : 0, mt: j===o.bott ? (live ? S.bt : H.settings.bt) : LIB[k].mt,
+      oa: st && st.opN ? Math.round(st.opSum/st.opN/100)/10 : null};
   });
   o.b = live ? S.buf.map(x=>x.length) : keys.map(()=>0);
   if (live){
@@ -639,19 +686,23 @@ function topBar(extra){
 function settingsHTML(){
   const s = H.settings, keys = LINES[s.n];
   return `<div class="settings">
-    <label>Sonraki tur modu
-      <select data-set="mode"><option value="push" ${s.mode==='push'?'selected':''}>İtme (push)</option><option value="kanban" ${s.mode==='kanban'?'selected':''}>Kanban (pull)</option></select></label>
-    <label>Kanban kart sayısı (K)
-      <select data-set="K">${[1,2,3,4].map(v=>`<option ${s.K===v?'selected':''}>${v}</option>`).join('')}</select></label>
-    <label>Tur süresi
-      <select data-set="round">${[120,180,240,300].map(v=>`<option value="${v}" ${s.round===v?'selected':''}>${v/60} dakika</option>`).join('')}</select></label>
-    <label>İstasyon sayısı
+    <label>İstasyon sayısı (= öğrenci sayısı)
       <select data-set="n">${[4,5,6].map(v=>`<option ${s.n===v?'selected':''}>${v}</option>`).join('')}</select></label>
-    <label>Darboğaz istasyonu
-      <select data-set="bott">${keys.map((k,j)=>`<option value="${j}" ${s.bott===j?'selected':''}>${j+1}. ${LIB[k].name}</option>`).join('')}</select></label>
-    <label>Darboğaz makine süresi
-      <select data-set="bt">${[5,6,7,8,9,10].map(v=>`<option value="${v}" ${s.bt===v?'selected':''}>${v} sn</option>`).join('')}</select></label>
-  </div>`;
+    <label id="kRow" style="display:${s.mode==='kanban'?'flex':'none'}">Kanban kart sayısı (K)
+      <select data-set="K">${[1,2,3,4].map(v=>`<option ${s.K===v?'selected':''}>${v}</option>`).join('')}</select></label>
+  </div>
+  <details id="adv" ${H.advOpen?'open':''} style="margin-top:10px"><summary class="small mut" style="cursor:pointer;font-weight:700">⚙️ Gelişmiş ayarlar</summary>
+    <div class="settings">
+      <label>Sonraki tur modu
+        <select data-set="mode"><option value="push" ${s.mode==='push'?'selected':''}>İtme (push)</option><option value="kanban" ${s.mode==='kanban'?'selected':''}>Kanban (pull)</option></select></label>
+      <label>Tur süresi
+        <select data-set="round">${[120,180,240,300,360].map(v=>`<option value="${v}" ${s.round===v?'selected':''}>${v/60} dakika</option>`).join('')}</select></label>
+      <label>Darboğaz istasyonu
+        <select data-set="bott">${keys.map((k,j)=>`<option value="${j}" ${s.bott===j?'selected':''}>${j+1}. ${LIB[k].name}</option>`).join('')}</select></label>
+      <label>Darboğaz makine süresi
+        <select data-set="bt">${[5,6,7,8,9,10,12].map(v=>`<option value="${v}" ${s.bt===v?'selected':''}>${v} sn</option>`).join('')}</select></label>
+    </div>
+  </details>`;
 }
 function bindSettings(root){
   root.querySelectorAll('[data-set]').forEach(el=>{
@@ -659,12 +710,20 @@ function bindSettings(root){
       const k = el.dataset.set, v = el.value;
       H.settings[k] = (k==='mode') ? v : +v;
       if (k==='n'){ if (H.settings.bott >= H.settings.n) H.settings.bott = 2; normalizeAssign(); H.view=''; }
+      if (k==='bott' || k==='bt'){ H.view=''; }
+      const kr = $('#kRow'); if (kr) kr.style.display = H.settings.mode==='kanban' ? 'flex' : 'none';
       H.dirty = true;
       const sb = $('#startBtn'); if (sb) sb.textContent = startLabel();
     };
   });
+  const adv = root.querySelector('#adv'); if (adv) adv.addEventListener('toggle', ()=>{ H.advOpen = adv.open; });
 }
 function startLabel(){ return '▶ Tur ' + (H.rounds.length+1) + ' başlat — ' + modeLabel(H.settings.mode, H.settings.K); }
+function trialInfo(){
+  const t = H.lastTrial; if (!t) return '';
+  const parts = t.names.map((nm,j)=>`${esc(nm)} <b>${isNaN(t.meas[j])?'—':fmt1(t.meas[j])+' sn'}</b>${j===t.realB?' 📍':''}`).join(' · ');
+  return `<div class="warn" style="background:#eef8f4;border-color:#bfe6d6;color:#11643f;margin-top:10px">✓ Deneme turu tamamlandı${t.accel?' (⚡ hızlandırıldı)':''}. Ölçülen işlem süreleri: ${parts}</div>`;
+}
 function slotsBlock(){
   return `<div class="card" style="margin-top:12px">
     <div class="row" style="justify-content:space-between"><h3 style="margin:0">İstasyonlar ve operatörler</h3>
@@ -695,7 +754,7 @@ function hostUpdateSlots(){
     return `<div class="slot ${p&&!fb?'has':''} ${fb||!p?'bot':''}">
       <div class="nm">${j+1}. ${LIB[k].icon} ${esc(LIB[k].name)} ${j===H.settings.bott?'<span class="bn">DARBOĞAZ</span>':''}</div>
       <div class="who">${who}</div>
-      <div class="small mut">Makine süresi: ${j===H.settings.bott?H.settings.bt:LIB[k].mt} sn · ${LIB[k].targets} dokunuş</div>
+      <div class="small mut">Plan: 👤 ${fmt1(LIB[k].op)} + ⚙️ ${j===H.settings.bott?H.settings.bt:LIB[k].mt} = <b>${fmt1(LIB[k].op + (j===H.settings.bott?H.settings.bt:LIB[k].mt))} sn</b></div>
       <div class="acts" style="margin-top:6px"><button class="ghost" data-a="bot" data-j="${j}">${fb?'Botu kaldır':'Bot yap'}</button>${p?`<button class="ghost" data-a="kick" data-j="${j}">Çıkar</button>`:''}</div>
     </div>`;
   }).join(''));
@@ -720,8 +779,8 @@ function hostBuildLobby(){
           <h3>Oyunun kuralları (öğrencilere okuyun)</h3>
           <ol class="rules">
             <li>Her telefon hattaki bir istasyondur. <b>İŞLE</b> tuşuna basınca önceki istasyondan bir parça alırsınız.</li>
-            <li>Parçanın üzerindeki numaralı noktalara <b>sırayla</b> dokunun; ardından makine kendi süresinde işler ve parça otomatik olarak sonraki istasyona gider.</li>
-            <li><b>Kaynak</b> istasyonunun makinesi daha yavaştır (darboğaz).</li>
+            <li>Ekranda istasyonunuza özgü işlemi yapın: <b>Kesim</b> çizgi boyunca kaydır · <b>Delme</b> basılı tut · <b>Kaynak</b> dikişi takip et · <b>Montaj</b> vidaları sürükle · <b>Kalite</b> kusurluyu bul · <b>Paketleme</b> koliye koy ve bantla.</li>
+            <li>Ardından makine kendi süresinde çalışır ve parça otomatik olarak sonraki istasyona gider. <b>${esc(LIB[LINES[H.settings.n][H.settings.bott]].name)}</b> makinesi daha yavaştır (planlanan darboğaz).</li>
             <li><span class="badge push">İTME</span> turunda kural: <b>girdi varsa hemen işle, boş durma.</b></li>
             <li><span class="badge kanban">KANBAN</span> turunda kural: <b>yalnızca boş kanban kartın varsa üret.</b> Sonraki istasyon parçanı çekince kartın geri gelir.</li>
             <li>Amaç her iki turda da müşteriye mümkün olduğunca çok ürün sevk etmek.</li>
@@ -729,19 +788,24 @@ function hostBuildLobby(){
         </div>
         ${slotsBlock()}
         <div class="card" style="margin-top:12px">
-          <h3>Ayarlar</h3>${settingsHTML()}
-          <p style="margin-top:14px"><button id="startBtn" class="green" style="font-size:1.15em">${startLabel()}</button></p>
-          <p class="small mut">Önerilen akış: Tur 1 İtme → Tur 2 Kanban (K=1). İsterseniz Tur 3'te K=3 ile kart sayısının etkisini gösterebilirsiniz.</p>
+          <h3>Başlat</h3>${settingsHTML()}${trialInfo()}
+          <p class="row" style="margin-top:14px"><button id="trialBtn" class="ghost">🧪 1 dk deneme turu (sonuçlara sayılmaz)</button><button id="startBtn" class="green" style="font-size:1.15em">${startLabel()}</button></p>
+          <p class="small mut">Önerilen akış: 🧪 Deneme turu → Tur 1 İtme → Tur 2 Kanban (K=1). Herkes iki turda da aynı istasyonda kalır.</p>
         </div>
       </div>
     </div></div>`;
   if (window.QRCode){ try { new QRCode($('#qr'), {text:url, width:230, height:230, correctLevel:QRCode.CorrectLevel.M}); } catch(e){} }
   else $('#qr').innerHTML = '<div class="small mut" style="padding:40px 10px">QR kütüphanesi yüklenemedi.<br>Adresi ya da oda kodunu kullanın.</div>';
   bindSettings($('#app')); bindSlots();
-  $('#startBtn').onclick = hostStartRound;
+  $('#startBtn').onclick = ()=>hostStartRound(false);
+  $('#trialBtn').onclick = ()=>hostStartRound(true);
+}
+function speedHTML(){
+  return `<span class="spdw" title="Simülasyon hızı">⏩ ${SPEEDS.map(x=>`<button data-sp="${x}" class="${H.speed===x?'on':''}">x${x}</button>`).join('')}</span>`
+    + (H.speed>1 ? ` <span class="chip err">⚡ TEST MODU x${H.speed} — botlar oynuyor</span>` : '');
 }
 function hostBuildLive(){
-  $('#app').innerHTML = `<div class="host">${topBar(`<span id="modeB"></span><span class="kpi" style="padding:4px 14px"><span class="l">Kalan süre</span> <span id="tleft" class="code" style="font-size:1.6em;font-weight:800"></span></span><button class="ghost" id="stopBtn">Turu bitir</button>`)}
+  $('#app').innerHTML = `<div class="host">${topBar(`<span id="modeB"></span><span id="spd"></span><span class="kpi" style="padding:4px 14px"><span class="l">Kalan süre</span> <span id="tleft" class="code" style="font-size:1.6em;font-weight:800"></span></span><button class="ghost" id="stopBtn">Turu bitir</button>`)}
     <div class="kpis">
       <div class="kpi"><div class="l">Sevk edilen ürün</div><div class="v" id="kSh">0</div><div class="s" id="kTh"></div></div>
       <div class="kpi"><div class="l">Yarı mamul stok (WIP)</div><div class="v" id="kWip">0</div><div class="s">hatta bekleyen + işlenen</div></div>
@@ -750,13 +814,15 @@ function hostBuildLive(){
       <div class="kpi"><div class="l">Son 5 parçanın çevrim süresi</div><div class="v" id="kL5">—</div><div class="s">güncel durum</div></div>
     </div>
     <div class="line" id="line"></div>
+    <div class="small mut" style="margin:-6px 0 10px">Plan = 👤 operatörden beklenen süre + ⚙️ makine süresi · Ölçülen = gerçekleşen ortalama işlem süresi · 📍 = ölçüme göre en yavaş istasyon (gerçek darboğaz)</div>
     <div class="charts2">
       <div class="chartcard"><h3>Yarı mamul stok – zaman</h3><canvas id="cW"></canvas></div>
       <div class="chartcard"><h3>Her ürünün çevrim süresi (sevk anına göre)</h3><canvas id="cL"></canvas></div>
     </div>
     <div class="cd" id="cd" style="display:none"><div style="font-size:4vh;font-weight:700" id="cdMode"></div><div class="n" id="cdN">3</div></div>
   </div>`;
-  $('#stopBtn').onclick = ()=>{ if (H.phase==='run'){ const t = now(); H.sim.end = t; H.sim.dur = Math.max(1000, t - H.sim.t0); } };
+  $('#stopBtn').onclick = ()=>{ if (H.phase==='run'){ const S = H.sim, t = Math.max(S.t0 + 1000, simNow()); S.end = t; S.dur = t - S.t0; } };
+  $('#spd').addEventListener('click', e=>{ const b = e.target.closest('button[data-sp]'); if (!b) return; setSpeed(+b.dataset.sp); });
   $('#line').addEventListener('pointerdown', e=>{
     const c = e.target.closest('.stc'); if (!c) return;
     const j = +c.dataset.j; H.forceBot[j] = !H.forceBot[j]; H.dirty = true;
@@ -764,13 +830,16 @@ function hostBuildLive(){
   H.lastChart = 0;
 }
 function hostUpdateLive(){
-  const S = H.sim, t = now(); if (!S) return;
+  const S = H.sim, rt = now(), t = simNow(); if (!S) return;
   const cd = $('#cd');
-  if (H.phase==='cd'){ cd.style.display='flex'; $('#cdN').textContent = Math.max(1, Math.ceil((H.cdEnd - t)/1000)); $('#cdMode').innerHTML = `Tur ${H.rounds.length+1} — <span class="badge ${S.mode}">${modeLabel(S.mode,S.K)}</span>`; }
+  const roundTag = S.trial ? '🧪 DENEME TURU · sonuçlara sayılmaz' : `Tur ${H.rounds.length+1} · ${modeLabel(S.mode,S.K)}`;
+  if (H.phase==='cd'){ cd.style.display='flex'; $('#cdN').textContent = Math.max(1, Math.ceil((H.cdEnd - rt)/1000)); $('#cdMode').innerHTML = `<span class="badge ${S.trial?'trial':S.mode}">${roundTag}</span>`; }
   else cd.style.display='none';
-  setHTML($('#modeB'), `<span class="badge ${S.mode}" style="font-size:1.1em">Tur ${H.rounds.length+1} · ${modeLabel(S.mode,S.K)}</span>`);
+  setHTML($('#modeB'), `<span class="badge ${S.trial?'trial':S.mode}" style="font-size:1.1em">${roundTag}</span>`);
+  setHTML($('#spd'), speedHTML());
+  const tn = H.phase==='run' ? Math.min(t, S.end) : S.t0;
   $('#tleft').textContent = H.phase==='run' ? fmtClock(S.end - t) : fmtClock(S.dur);
-  const el = H.phase==='run' ? (t - S.t0)/1000 : 0;
+  const el = H.phase==='run' ? (tn - S.t0)/1000 : 0;
   const lts = S.shipped.map(x=>x.lt/1000);
   $('#kSh').textContent = S.shipped.length;
   $('#kTh').textContent = el>20 ? fmt1(S.shipped.length/(el/60)) + ' adet/dk' : '';
@@ -778,6 +847,7 @@ function hostUpdateLive(){
   $('#kRel').textContent = S.released;
   $('#kLt').textContent = lts.length ? Math.round(mean(lts)) + ' sn' : '—';
   $('#kL5').textContent = lts.length ? Math.round(mean(lts.slice(-5))) + ' sn' : '—';
+  const meas = measOf(S), rb = realBott(meas, S.st.map(s=>s.count));
   // hat diyagramı
   let h = `<div class="endcap"><div style="font-size:1.8em">🏗️</div>Hammadde<div class="mut small">sınırsız</div></div><div class="buf"><div class="ar">→</div></div>`;
   for (let j=0;j<S.n;j++){
@@ -785,17 +855,20 @@ function hostUpdateLive(){
     const cls = (ss==='manual'||ss==='machine') ? 's-work' : ss==='starved' ? 's-starved' : ss==='blocked' ? 's-blocked' : '';
     const stt = {manual:'✋ Operatör işliyor', machine:'⚙️ Makine çalışıyor', starved:'⏳ Girdi bekliyor (aç)', blocked:'🟦 Kart bekliyor (bloke)', ready:'● Hazır'}[ss];
     let pw = 0, pcls = '';
-    if (st.job){ if (st.job.ph==='m') pcls='manual'; else pw = Math.min(100, (t - (st.job.e - st.job.d))/st.job.d*100); }
-    const op = isBot(j) ? '🤖 Bot' : '👤 ' + esc(p ? p.name : '');
+    if (st.job){ if (st.job.ph==='m') pcls='manual'; else pw = Math.min(100, (tn - (st.job.e - st.job.d))/st.job.d*100); }
+    const op = isBot(j) ? '🤖 Bot' + (H.speed>1 && p ? ' ⚡' : '') : '👤 ' + esc(p ? p.name : '');
     let cards = '';
     if (S.mode==='kanban' && j<S.n-1){
       const used = S.buf[j].length + (st.job?1:0);
       cards = `<div class="cards">Kart:${Array.from({length:S.K},(_,i)=>`<b class="${i<used?'u':''}"></b>`).join('')}</div>`;
     }
+    const ms = meas[j];
     h += `<div class="stc ${cls}" data-j="${j}" title="Tıkla: bot aç/kapat">
-      <div class="sth">${LIB[st.key].icon} ${esc(LIB[st.key].name)} ${j===S.bott?'<span class="bn">DARBOĞAZ</span>':''}</div>
-      <div class="op">${op} · ${st.mt} sn</div>
-      <div class="pbar ${pcls}"><i style="width:${pw}%"></i></div>
+      <div class="sth">${LIB[st.key].icon} ${esc(LIB[st.key].name)} ${j===S.bott?'<span class="bn">DARBOĞAZ</span>':''} ${j===rb?'<span class="rb">📍 GERÇEK</span>':''}</div>
+      <div class="op">${op}</div>
+      <div class="pt">Plan: <b>${fmt1(st.op+st.mt)} sn</b> <span class="mut">(👤${fmt1(st.op)} + ⚙️${fmt1(st.mt)})</span></div>
+      <div class="pt">Ölçülen: <b class="${j===rb?'rbt':''}">${isNaN(ms)?'—':fmt1(ms)+' sn'}</b></div>
+      <div class="pbar ${pcls}" style="margin-top:5px"><i style="width:${pw}%"></i></div>
       <div class="stt">${stt}</div><div class="cnt">İşlenen: ${st.count}</div>${cards}</div>`;
     if (j<S.n-1){
       const q = S.buf[j].length, show = Math.min(q, 40);
@@ -804,15 +877,15 @@ function hostUpdateLive(){
   }
   h += `<div class="buf"><div class="ar">→</div></div><div class="endcap"><div style="font-size:1.8em">🚚</div>Müşteri<div class="big">${S.shipped.length}</div></div>`;
   setHTML($('#line'), h);
-  // grafikler (saniyede bir)
-  if (t - (H.lastChart||0) > 1000){
-    H.lastChart = t;
+  // grafikler (gerçek zamanla saniyede bir)
+  if (rt - (H.lastChart||0) > 1000){
+    H.lastChart = rt;
     const xMax = S.dur/1000;
     const wS = H.rounds.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], alpha:.35, pts:r.wipS, width:2}));
-    wS.push({name:'Şu an', color:ROUND_COLORS[H.rounds.length%6], pts:S.wipS, width:3.5});
+    wS.push({name:'Şu an', color:S.trial?'#6b4fc4':ROUND_COLORS[H.rounds.length%6], pts:S.wipS, width:3.5});
     lineChart($('#cW'), wS, {xMax, xLabel:'zaman (sn)', yLabel:'adet'});
     const lS = H.rounds.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], alpha:.3, pts:r.ltS, dots:true}));
-    lS.push({name:'Şu an', color:ROUND_COLORS[H.rounds.length%6], pts:S.shipped.map(x=>[(x.ship-S.t0)/1000, x.lt/1000]), dots:true});
+    lS.push({name:'Şu an', color:S.trial?'#6b4fc4':ROUND_COLORS[H.rounds.length%6], pts:S.shipped.map(x=>[(x.ship-S.t0)/1000, x.lt/1000]), dots:true});
     lineChart($('#cL'), lS, {xMax, xLabel:'sevk anı (sn)', yLabel:'çevrim süresi (sn)'});
   }
 }
@@ -841,6 +914,7 @@ function hostBuildResults(){
     ['Son 5 ürünün çevrim süresi (sn)', r=>fmtSec(r.last5), true],
     ['En uzun çevrim süresi (sn)', r=>fmtSec(r.maxLT)],
     ['Little Yasası ile çevrim süresi = Ort. WIP ÷ çıktı hızı (sn)', r=>fmtSec(r.little)],
+    ['Gerçek darboğaz (ölçülen en uzun işlem süresi)', r=>r.realB>=0 ? esc(r.names[r.realB]) + ' · ' + fmt1(r.meas[r.realB]) + ' sn' : '—'],
     ['Darboğaz kullanım oranı (%)', r=>Math.round(r.util[r.bott])+'%'],
     ['Diğer istasyonların ort. kullanım oranı (%)', r=>Math.round(mean(r.util.filter((_,i)=>i!==r.bott)))+'%']
   ];
@@ -850,10 +924,12 @@ function hostBuildResults(){
       <table class="tbl"><thead><tr><th>Gösterge</th>${R.map((r,i)=>`<th style="color:${ROUND_COLORS[i%6]}">${esc(r.label)}</th>`).join('')}</tr></thead>
       <tbody>${rows.map(([l,f,key])=>`<tr class="${key?'key':''}"><td>${l}</td>${R.map(r=>`<td>${f(r)}</td>`).join('')}</tr>`).join('')}</tbody></table>
     </div>
-    <div class="charts3">
+    ${R.some(r=>r.accel)?'<p class="warn" style="margin-bottom:12px">⚡ işaretli turlar hızlandırılarak (test modunda, botlarla) oynandı.</p>':''}
+    <div class="charts2">
       <div class="chartcard"><h3>Yarı mamul stok – zaman</h3><canvas id="rW"></canvas></div>
       <div class="chartcard"><h3>Her ürünün çevrim süresi</h3><canvas id="rL"></canvas></div>
       <div class="chartcard"><h3>İstasyon kullanım oranları (%)</h3><canvas id="rU"></canvas></div>
+      <div class="chartcard"><h3>İşlem süresi: plan ↔ ölçülen (sn)</h3><canvas id="rT"></canvas></div>
     </div>
     <div class="lobby" style="margin-top:12px;grid-template-columns:1fr 1fr">
       <div class="card"><h3>Tartışma soruları</h3>
@@ -872,7 +948,7 @@ function hostBuildResults(){
       </div>
     </div></div>`;
   bindSettings($('#app')); bindSlots();
-  $('#startBtn').onclick = hostStartRound;
+  $('#startBtn').onclick = ()=>hostStartRound(false);
   if ($('#cmpBtn')) $('#cmpBtn').onclick = ()=>{ if (H.cmpP==null || !H.rounds[H.cmpP]) H.cmpP = lastIdx('push'); if (H.cmpK==null || !H.rounds[H.cmpK]) H.cmpK = lastIdx('kanban'); H.showCmp = true; };
   $('#resetBtn').onclick = ()=>{ if (H._rc && now()-H._rc<3000){ H.rounds=[]; H.settings.mode='push'; H.showCmp=false; H.cmpP=null; H.cmpK=null; H.phase='lobby'; H.view=''; H.dirty=true; } else { H._rc = now(); $('#resetBtn').textContent='Emin misiniz? Tekrar tıklayın'; } };
   requestAnimationFrame(()=>{
@@ -880,6 +956,8 @@ function hostBuildResults(){
     lineChart($('#rW'), R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], pts:r.wipS})), {xMax, xLabel:'zaman (sn)', yLabel:'adet'});
     lineChart($('#rL'), R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], pts:r.ltS, dots:true})), {xMax, xLabel:'sevk anı (sn)', yLabel:'sn'});
     barChart($('#rU'), R[R.length-1].names, R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], vals:r.util})), {yMax:100, unit:'%'});
+    const lastR = R[R.length-1], tS = [{name:'Plan', color:'#9aa3ad', vals:lastR.plan}].concat(R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], vals:r.meas.map(v=>isNaN(v)?0:v)})));
+    barChart($('#rT'), lastR.names, tS, {yMax:niceMax(Math.max(...tS.flatMap(x=>x.vals))*1.05), unit:''});
   });
 }
 
@@ -887,6 +965,7 @@ function hostBuildResults(){
 /* ---------------- İtme – Kanban karşılaştırma ekranı ---------------- */
 const CP = '#d64545', CK = '#0f8a6c';
 function bufName(r,j){ return r.names[j] + ' → ' + r.names[j+1]; }
+function rbName(r){ return r.realB>=0 ? esc(r.names[r.realB]) + ' (' + fmt1(r.meas[r.realB]) + ' sn)' : '—'; }
 function littleTxt(who, wip, calc){
   if (!(wip>0) || !(calc>0)) return who + ' hesaplanamadı (sevk edilen ürün yok).';
   const ok = Math.abs(calc - wip) / wip <= 0.3;
@@ -955,6 +1034,7 @@ function hostBuildCompare(){
     `<b>Nerede birikti?</b> İtmede stok en çok <b>${esc(bufName(p,pq.at))}</b> arasında birikti (en yüksek <b>${pq.m}</b> adet). Kanbanda en kalabalık ara stok ${kq.m} adet.`,
     `<b>Hız:</b> Son ürünler hattı itmede <b>${Math.round(p.last5)} sn</b>, kanbanda <b>${Math.round(k.last5)} sn</b>'de geçti${isNaN(ltRatio)?'.':ltRatio>=1.15?' — kanbanda yaklaşık <b>'+fmt1(ltRatio)+' kat</b> daha hızlı.':ltRatio<=0.87?' — kanbanda daha yavaş; kart sayısını (K) tartışın.':' — fark yok. Tur kısa kaldıysa itmedeki stok henüz çevrim süresine yansımamış olabilir.'}`,
     `<b>Little Yasası</b> (WIP = çıktı hızı × çevrim süresi): ` + littleTxt('Kanbanda', k.avgWip, littleK) + ' ' + littleTxt('İtmede', p.avgWip, littleP),
+    `<b>Gerçek darboğaz:</b> Ölçülen işlem sürelerine göre en yavaş istasyon itmede <b>${rbName(p)}</b>, kanbanda <b>${rbName(k)}</b>. ` + (p.realB===p.bott && k.realB===k.bott ? `Planlanan darboğaz (${esc(bName)}) gerçekten de en yavaş istasyon oldu.` : `Planlanan darboğaz ${esc(bName)} idi; ölçüm farklı bir istasyonu gösteriyor. Hangi istasyonun neden yavaşladığını tartışın.`),
     `<b>Meşguliyet ≠ verimlilik:</b> Darboğaz dışındaki istasyonlar itmede %${Math.round(others(p))}, kanbanda %${Math.round(others(k))} oranında çalıştı. Fazla çalışma çıktıyı artırmadı, yalnızca stok üretti.`
   ];
 
@@ -982,10 +1062,11 @@ function hostBuildCompare(){
         <div class="card"><h3 style="margin-top:0">Ne gördük?</h3><ul class="msgs">${msgs.map(m=>`<li>${m}</li>`).join('')}</ul></div>
       </div>
     </div>
-    <div class="charts3">
+    <div class="charts2">
       <div class="chartcard"><h3>Yarı mamul stok – zaman</h3><canvas id="xW"></canvas></div>
       <div class="chartcard"><h3>Her ürünün çevrim süresi (sevk anına göre)</h3><canvas id="xL"></canvas></div>
       <div class="chartcard"><h3>İstasyon kullanım oranları</h3><canvas id="xU"></canvas></div>
+      <div class="chartcard"><h3>İşlem süresi: plan ↔ ölçülen (sn)</h3><canvas id="xT"></canvas></div>
     </div>
   </div>`;
   $('#backBtn').onclick = ()=>{ H.showCmp = false; };
@@ -997,6 +1078,8 @@ function hostBuildCompare(){
     lineChart($('#xW'), [{name:'İtme', color:CP, pts:p.wipS},{name:'Kanban', color:CK, pts:k.wipS}], {xMax, xLabel:'zaman (sn)', yLabel:'adet'});
     lineChart($('#xL'), [{name:'İtme', color:CP, pts:p.ltS, dots:true},{name:'Kanban', color:CK, pts:k.ltS, dots:true}], {xMax, xLabel:'sevk anı (sn)', yLabel:'sn'});
     barChart($('#xU'), p.names, [{name:'İtme', color:CP, vals:p.util},{name:'Kanban', color:CK, vals:k.util}], {yMax:100, unit:'%'});
+    const tS = [{name:'Plan', color:'#9aa3ad', vals:p.plan},{name:'İtme ölçülen', color:CP, vals:p.meas.map(v=>isNaN(v)?0:v)},{name:'Kanban ölçülen', color:CK, vals:k.meas.map(v=>isNaN(v)?0:v)}];
+    barChart($('#xT'), p.names, tS, {yMax:niceMax(Math.max(...tS.flatMap(x=>x.vals))*1.05), unit:''});
   });
 }
 
@@ -1036,7 +1119,8 @@ function playerConnect(){
   document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible'){ try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){} playerSend({t:'hb', name:G.name}); } });
   playerRender();
 }
-const hostNowEst = () => G.S ? G.S.now + (Date.now() - G.recvAt) : Date.now();
+const hostNowEst = () => G.S ? G.S.now + (Date.now() - G.recvAt) * (G.S.sp || 1) : Date.now();
+function remNow(o){ return o.rem - (Date.now() - G.recvAt) * (o.ph==='run' ? (o.sp || 1) : 1); }
 function myIdx(){ return G.S ? G.S.as.findIndex(a=>a.p===G.pid) : -1; }
 function pCanStart(o,j){
   if (o.as[j].j) return 'busy';
@@ -1044,15 +1128,7 @@ function pCanStart(o,j){
   if (o.mode==='kanban' && j<o.n-1 && o.b[j] >= o.K) return 'blocked';
   return 'ready';
 }
-function genTargets(n){
-  const pts = [];
-  for (let tries=0; pts.length<n && tries<500; tries++){
-    const x = rnd(50,270), y = rnd(52,168);
-    if (pts.every(p=>Math.hypot(p.x-x,p.y-y) > 78)) pts.push({x,y});
-  }
-  while (pts.length<n) pts.push({x:60+pts.length*80, y:110});
-  return pts;
-}
+function vib(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(_){} }
 function playerRender(){
   const app = $('#app'), o = G.S;
   if (!o){
@@ -1093,6 +1169,7 @@ function buildPlayerShell(){
   <div class="cd" id="pcd" style="display:none"><div id="pcdm" style="font-size:6vw;font-weight:800;text-align:center;padding:0 10px"></div><div class="cdp" id="pcdn"></div></div>`;
   $('#pmain').addEventListener('pointerdown', onMainPointer);
 }
+function planTxt(key, mt){ const op = LIB[key].op; return `👤 ≈${fmt1(op)} sn + ⚙️ ${fmt1(mt)} sn = ≈${fmt1(op+mt)} sn`; }
 function updatePlayer(){
   const o = G.S, me = myIdx();
   if (o.ph==='lobby' || o.ph==='res'){
@@ -1100,7 +1177,8 @@ function updatePlayer(){
     const mine = me>=0 ? o.keys[me] : null;
     setHTML($('#lobbyTop'), `<div class="card"><div>Merhaba <b>${esc(G.name)}</b> 👋</div>
       ${mine ? `<div style="font-size:1.3em;font-weight:800;margin-top:6px">${LIB[mine].icon} ${me+1}. ${esc(LIB[mine].name)} ${me===o.bott?'<span class="bn">DARBOĞAZ</span>':''}</div>
-        <div class="small mut">Görevin: ${esc(LIB[mine].task)}. Makine süresi ${o.as[me].mt} sn.</div>` : `<div style="margin-top:6px"><b>Gözlemcisin.</b> Boş bir istasyon seçebilir ya da göstergeleri izleyebilirsin.</div>`}
+        <div class="small" style="margin-top:4px"><b>Görevin:</b> ${esc(LIB[mine].task)}.</div>
+        <div class="small mut">Planlanan süre: ${planTxt(mine, o.as[me].mt)}</div>` : `<div style="margin-top:6px"><b>Gözlemcisin.</b> Boş bir istasyon seçebilir ya da göstergeleri izleyebilirsin.</div>`}
       <p class="small mut" style="margin-bottom:0">${o.ph==='res' ? '✅ Tur bitti. Sonuçlar projeksiyonda. Bir sonraki tur için bekleyin.' : 'Eğitmen turu başlatınca bu ekran istasyon paneline dönüşecek. Ekranı açık tutun.'}</p></div>`);
     setHTML($('#plist'), o.keys.map((k,j)=>{
       const a = o.as[j], taken = a.p && a.p!==G.pid && !a.bot;
@@ -1110,12 +1188,11 @@ function updatePlayer(){
     return;
   }
   // run / cd
-  const rem = o.ph==='run' ? o.rem - (Date.now()-G.recvAt) : 0;
-  const tm = $('#ptm'); if (tm) tm.textContent = o.ph==='run' ? fmtClock(rem) : '';
-  const ruleTxt = o.mode==='push'
-    ? '<b>İTME:</b> Girdi varsa hemen işle — boş durmak yok!'
+  const tm = $('#ptm'); if (tm) tm.textContent = o.ph==='run' ? fmtClock(remNow(o)) : '';
+  const ruleTxt = o.tr ? '<b>🧪 DENEME TURU:</b> Hareketi öğren, hızlan. Sonuçlar sayılmaz. Girdi varsa işle.'
+    : o.mode==='push' ? '<b>İTME:</b> Girdi varsa hemen işle — boş durmak yok!'
     : '<b>KANBAN:</b> Yalnızca boş kartın varsa üret. Kart, sonraki istasyon parçanı çekince geri gelir.';
-  setHTML($('#prule'), `<div class="prule ${o.mode}">${ruleTxt}</div>`);
+  setHTML($('#prule'), `<div class="prule ${o.tr?'trial':o.mode}">${ruleTxt}</div>`);
   if (me < 0){
     const k = o.k || {sh:0,wip:0,lt:0,l5:0};
     setHTML($('#pk'), `<div class="box"><div class="l">Sevk edilen</div><div class="v">${k.sh}</div></div><div class="box"><div class="l">Yarı mamul (WIP)</div><div class="v">${k.wip}</div></div>
@@ -1125,7 +1202,6 @@ function updatePlayer(){
   }
   const key = o.keys[me], L = LIB[key], a = o.as[me];
   setHTML($('#pst'), `${L.icon} ${esc(L.name)} ${me===o.bott?'<span class="bn">DARBOĞAZ</span>':''}`);
-  // giriş / çıkış kutuları
   const inQ = me===0 ? null : o.b[me-1];
   setHTML($('#pin'), `<div class="l">GİRİŞ (önceki istasyondan)</div>` + (me===0 ? `<div class="v">∞</div><div class="small mut">Hammadde deposu</div>`
     : `<div class="v" style="color:${inQ===0?'var(--starve)':'inherit'}">${inQ}</div><div class="mini">${'<i></i>'.repeat(Math.min(inQ,30))}</div>`));
@@ -1137,21 +1213,24 @@ function updatePlayer(){
   } else {
     setHTML($('#pout'), `<div class="l">ÇIKIŞIM (sonraki istasyonu bekleyen)</div><div class="v">${o.b[me]}</div><div class="mini">${'<i></i>'.repeat(Math.min(o.b[me],30))}</div>`);
   }
-  setHTML($('#pcount'), `Bu turda işlediğin: <b>${a.c}</b>`);
+  setHTML($('#pcount'), `İşlediğin: <b>${a.c}</b>${a.oa ? ` · el işin ort. <b>${fmt1(a.oa)} sn</b> (plan ≈${fmt1(L.op)})` : ''}`);
   setHTML($('#pconn'), `<span class="chip ${G.conn.s}">● ${esc(G.conn.m)}</span>`);
-  // geri sayım
   const pcd = $('#pcd');
-  if (o.ph==='cd'){ pcd.style.display='flex'; $('#pcdm').innerHTML = `<span class="badge ${o.mode}">${modeLabel(o.mode,o.K)}</span><br><span style="font-size:.6em">${o.mode==='push'?'Girdi varsa hemen işle!':'Sadece boş kartın varsa üret!'}</span>`; $('#pcdn').textContent = Math.max(1, Math.ceil((o.rem - (Date.now()-G.recvAt))/1000)); }
-  else pcd.style.display='none';
+  if (o.ph==='cd'){
+    pcd.style.display='flex';
+    $('#pcdm').innerHTML = o.tr ? `<span class="badge trial">🧪 DENEME TURU</span><br><span style="font-size:.6em">Hareketini öğren — sayılmaz</span>`
+      : `<span class="badge ${o.mode}">${modeLabel(o.mode,o.K)}</span><br><span style="font-size:.6em">${o.mode==='push'?'Girdi varsa hemen işle!':'Sadece boş kartın varsa üret!'}</span>`;
+    $('#pcdn').textContent = Math.max(1, Math.ceil(remNow(o)/1000));
+  } else pcd.style.display='none';
   updateMain(o, me, a, L);
 }
 function updateMain(o, me, a, L){
   const main = $('#pmain'); if (!main) return;
-  const job = a.j;
+  const job = a.j, key = o.keys[me];
   // görev durumunu hostla eşitle
   if (job && job.ph==='m'){
     if (G.task && G.task.u==='p') G.task.u = job.u;            // iyimser başlangıç onaylandı
-    if (!G.task || G.task.u!==job.u) G.task = {u:job.u, pts:genTargets(L.targets), next:0, sent:0};
+    if (!G.task || G.task.u!==job.u) G.task = newTask(key, job.u);
     G.pending = 0;
   } else if (job && job.ph==='x'){
     G.task = null; G.pending = 0;
@@ -1159,13 +1238,14 @@ function updateMain(o, me, a, L){
     if (G.pending && Date.now()-G.pending > 2500){ G.pending = 0; G.task = null; } // reddedildi
     if (!G.pending && G.task && G.task.u!=='p') G.task = null;
   }
-  let k, html;
-  if (o.ph==='cd'){ k='cd'; html = `<div class="waitbox info"><span class="ico">⏱️</span>Hazırlan…</div>`; }
+  let k, html, isTask = false;
+  if (o.ph==='cd'){ k='cd'; html = `<div class="waitbox info"><span class="ico">⏱️</span>Hazırlan…<div class="small" style="font-weight:500;margin-top:6px">Görevin: ${esc(L.task)}</div></div>`; }
+  else if ((o.sp||1) > 1){ k='fast'; html = `<div class="waitbox info"><span class="ico">⚡</span>Test modu (x${o.sp})<br><span style="font-weight:500">Eğitmen simülasyonu hızlandırdı; istasyonunu şu an bot çalıştırıyor.</span></div>`; }
   else if (a.fb){ k='fb'; html = `<div class="waitbox info"><span class="ico">🤖</span>Bu istasyonu şu an eğitmen bota verdi.</div>`; }
   else if (G.task){
-    const done = G.task.next >= G.task.pts.length;
-    k = 't' + G.task.u + (done?'d':'');
-    html = done ? `<div class="machine"><div style="font-size:2em">⚙️</div><b>Makineye gönderiliyor…</b></div>` : taskHTML(G.task, L, me===o.bott);
+    k = 't' + G.task.u + (G.task.done?'d':'');
+    if (G.task.done) html = `<div class="machine"><div style="font-size:2em">⚙️</div><b>Makineye gönderiliyor…</b></div>`;
+    else { isTask = true; html = `<div class="task"><div class="tt">${L.icon} ${esc(L.task)}</div><svg id="tsvg" viewBox="0 0 320 230"></svg><div class="small" id="tstat" style="font-weight:700"></div></div>`; }
   } else if (job && job.ph==='x'){
     k = 'x' + job.u;
     html = `<div class="machine"><div style="font-size:2.2em">⚙️</div><b>Makine çalışıyor</b><div class="small mut">${esc(L.name)} makine süresi ≈ ${a.mt} sn ${me===o.bott?'(darboğaz)':''}</div><div class="pbar"><i id="mbar" style="width:0%"></i></div><div class="small mut">Bitince parça otomatik olarak ${me===o.n-1?'müşteriye sevk edilir 🚚':'sonraki istasyona gider ➜'}</div></div>`;
@@ -1176,44 +1256,21 @@ function updateMain(o, me, a, L){
     else if (cs==='blocked'){ k='blocked'; html = `<div class="waitbox blocked"><span class="ico">🟦</span>Kanban kartın yok<br><span style="font-weight:500">Sonraki istasyon parçanı çekene kadar <b>üretme</b>. Kart geri gelince tuş açılacak.</span></div>`; }
     else { k='busy'; html = `<div class="waitbox info">…</div>`; }
   }
-  if (G.mainKey !== k){ G.mainKey = k; main.innerHTML = html; }
-}
-function taskHTML(task, L, isB){
-  const plate = `<rect x="18" y="22" width="284" height="176" rx="14" fill="#cfd6de" stroke="#8a96a3" stroke-width="3"/>
-    <rect x="30" y="34" width="260" height="152" rx="10" fill="none" stroke="#b2bcc7" stroke-width="2" stroke-dasharray="6 6"/>`;
-  return `<div class="task"><div class="tt">${L.icon} ${esc(L.task)}</div>
-    <svg viewBox="0 0 320 220">${plate}
-    ${task.pts.map((p,i)=>`<g class="tg ${i<task.next?'done':''} ${i===task.next?'next':''}" data-i="${i}">
-      <circle cx="${p.x}" cy="${p.y}" r="34" fill="transparent"/><circle class="c" cx="${p.x}" cy="${p.y}" r="24"/>
-      <text x="${p.x}" y="${p.y+8}" text-anchor="middle">${i<task.next?'✓':i+1}</text></g>`).join('')}
-    </svg><div class="small mut">Sırayla dokun: ${task.next}/${task.pts.length}${isB?' · ardından uzun makine süresi':''}</div></div>`;
+  if (G.mainKey !== k){ G.mainKey = k; main.innerHTML = html; if (isTask){ bindTask(); renderTask(); } }
 }
 function onMainPointer(e){
-  const o = G.S, me = myIdx(); if (!o || me<0 || o.ph!=='run') return;
+  const o = G.S, me = myIdx(); if (!o || me<0 || o.ph!=='run' || (o.sp||1)>1) return;
   if (e.target.closest('#go')){
     e.preventDefault();
     G.pending = Date.now(); G.startSent = Date.now();
-    G.task = {u:'p', pts:genTargets(LIB[o.keys[me]].targets), next:0, sent:0};
+    G.task = newTask(o.keys[me], 'p');
     playerSend({t:'start', st:me});
-    try { navigator.vibrate && navigator.vibrate(12); } catch(_){}
-    updatePlayer(); return;
-  }
-  const g = e.target.closest('.tg');
-  if (g && G.task){
-    e.preventDefault();
-    const i = +g.dataset.i;
-    if (i === G.task.next){
-      G.task.next++;
-      try { navigator.vibrate && navigator.vibrate(10); } catch(_){}
-      if (G.task.next >= G.task.pts.length) { trySendDone(); }
-      G.mainKey = ''; updatePlayer();
-    } else if (i > G.task.next){
-      const svg = g.closest('.task'); svg.classList.remove('shake'); void svg.offsetWidth; svg.classList.add('shake');
-    }
+    vib(12);
+    updatePlayer();
   }
 }
 function trySendDone(){
-  const t = G.task; if (!t || t.next < t.pts.length || t.u==='p') return;
+  const t = G.task; if (!t || !t.done || t.u==='p') return;
   if (Date.now() - t.sent > 1000){ t.sent = Date.now(); playerSend({t:'done', st:myIdx(), u:t.u}); }
 }
 function playerTick(){
@@ -1221,15 +1278,205 @@ function playerTick(){
   const me = myIdx();
   if (o.ph==='run' && me>=0){
     const a = o.as[me];
-    // makine ilerleme çubuğu
     const bar = $('#mbar');
     if (bar && a.j && a.j.ph==='x'){ const left = a.j.e - hostNowEst(); bar.style.width = Math.max(0, Math.min(100, (1 - left/a.j.d)*100)) + '%'; }
-    // tekrar gönderimler
     if (G.pending && !a.j && Date.now() - G.startSent > 1000 && Date.now() - G.pending < 2400){ G.startSent = Date.now(); playerSend({t:'start', st:me}); }
-    if (G.task && G.task.next >= G.task.pts.length) trySendDone();
-    const tm = $('#ptm'); if (tm) tm.textContent = fmtClock(o.rem - (Date.now()-G.recvAt));
+    if (G.task && G.task.done) trySendDone();
+    const tm = $('#ptm'); if (tm) tm.textContent = fmtClock(remNow(o));
+    if (G.task && !G.task.done && ((G.task.slip && Date.now() - G.task.slip < 1500) || (G.task.wrongT && Date.now() - G.task.wrongT < 900))) renderTask();
   }
-  if (o.ph==='cd' && me>=0){ const n = $('#pcdn'); if (n) n.textContent = Math.max(1, Math.ceil((o.rem - (Date.now()-G.recvAt))/1000)); }
+  if (o.ph==='cd' && me>=0){ const n = $('#pcdn'); if (n) n.textContent = Math.max(1, Math.ceil(remNow(o)/1000)); }
+}
+
+/* ---------------- İstasyon hareketleri (telefon) ---------------- */
+// Her görev 320×230'luk bir SVG üzerinde çalışır. done=true olunca hosta "done" gönderilir.
+function spreadPts(n, x0,x1,y0,y1, minD){
+  const pts = [];
+  for (let t=0; pts.length<n && t<800; t++){ const x = rnd(x0,x1), y = rnd(y0,y1); if (pts.every(p=>Math.hypot(p.x-x,p.y-y) > minD)) pts.push({x,y}); }
+  if (pts.length<n){ // sığmadıysa: yatayda eşit aralıklı, dikeyde rastgele yerleşim (üst üste binme olmaz)
+    return Array.from({length:n}, (_,i)=>({x:x0+(i+.5)*(x1-x0)/n, y:rnd(y0,y1)}));
+  }
+  return pts;
+}
+function sampleLine(pts, step){
+  const out = [];
+  for (let i=0;i<pts.length-1;i++){ const A=pts[i], B=pts[i+1], n=Math.max(1, Math.round(Math.hypot(B.x-A.x,B.y-A.y)/step)); for (let k=0;k<n;k++) out.push({x:A.x+(B.x-A.x)*k/n, y:A.y+(B.y-A.y)*k/n}); }
+  out.push(pts[pts.length-1]); return out;
+}
+function projSeg(p,a,b){ const dx=b.x-a.x, dy=b.y-a.y, L2=dx*dx+dy*dy; let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/L2; t=Math.max(0,Math.min(1,t)); return {t, d:Math.hypot(p.x-(a.x+dx*t), p.y-(a.y+dy*t))}; }
+function newTask(key, u){
+  const type = LIB[key].type, T = {u, key, type, done:false, sent:0, wrong:0, slip:0};
+  if (type==='cut'){ T.a={x:34, y:rnd(55,175)}; T.b={x:286, y:rnd(55,175)}; T.prog=0; T.active=false; }
+  if (type==='hold'){ T.pts = spreadPts(3, 55,265, 60,170, 85); T.cur=0; T.hs=0; T.fill=0; }
+  if (type==='trace'){ const n=5, pts=[]; for (let i=0;i<=n;i++) pts.push({x:34+i*(252/n), y: i%2 ? rnd(135,180) : rnd(45,90)}); T.path=pts; T.samp=sampleLine(pts,4); T.i=0; T.active=false; }
+  if (type==='drag'){ T.holes = spreadPts(3, 55,265, 45,125, 80).map(p=>({x:p.x, y:p.y, f:false})); T.sc=[70,160,250].map(x=>({x, y:198, hx:x, hy:198, h:-1})); T.dr=-1; }
+  if (type==='inspect'){ T.bad = Math.floor(Math.random()*4); T.kind = ['eksik','catlak','fazla'][Math.floor(Math.random()*3)]; T.wrongAt=-1; T.wrongT=0; }
+  if (type==='pack'){ T.stage='drag'; T.px=T.hx=72; T.py=T.hy=140; T.dr=false; T.a={x:178,y:98}; T.b={x:306,y:98}; T.prog=0; T.active=false; }
+  return T;
+}
+function swipeDown(T,p){ const r = projSeg(p,T.a,T.b); if (r.d < 36 && r.t <= T.prog + 0.12) T.active = true; }
+function swipeMove(T,p){
+  if (!T.active) return;
+  const r = projSeg(p,T.a,T.b);
+  if (r.d > 36){ T.active = false; T.slip = Date.now(); vib(40); return; }
+  T.prog = Math.max(T.prog, Math.min(r.t, T.prog + 0.15));
+}
+function taskDown(T,p){
+  if (T.type==='cut') swipeDown(T,p);
+  else if (T.type==='hold'){ const h = T.pts[T.cur]; if (h && Math.hypot(p.x-h.x,p.y-h.y) < 42){ T.hs = performance.now(); T.fill = 0; requestAnimationFrame(holdLoop); } }
+  else if (T.type==='trace'){ const s = T.samp[T.i]; if (Math.hypot(p.x-s.x,p.y-s.y) < 38) T.active = true; }
+  else if (T.type==='drag'){ T.dr = T.sc.findIndex(s=>s.h<0 && Math.hypot(p.x-s.x,p.y-s.y) < 32); }
+  else if (T.type==='inspect'){
+    const idx = (p.y<115 ? 0 : 2) + (p.x<160 ? 0 : 1);
+    if (idx===T.bad) T.found = true; else { T.wrong++; T.wrongAt = idx; T.wrongT = Date.now(); vib(60); }
+  }
+  else if (T.type==='pack'){
+    if (T.stage==='drag'){ if (Math.abs(p.x-T.px)<40 && Math.abs(p.y-T.py)<40) T.dr = true; }
+    else swipeDown(T,p);
+  }
+}
+function taskMove(T,p){
+  if (T.type==='cut') swipeMove(T,p);
+  else if (T.type==='hold'){ const h = T.pts[T.cur]; if (T.hs && h && Math.hypot(p.x-h.x,p.y-h.y) > 50){ T.hs = 0; T.fill = 0; } }
+  else if (T.type==='trace'){
+    if (!T.active) return;
+    let best=-1, bd=1e9;
+    for (let k=T.i; k<Math.min(T.samp.length, T.i+22); k++){ const s=T.samp[k], d=Math.hypot(p.x-s.x,p.y-s.y); if (d<bd){ bd=d; best=k; } }
+    if (bd <= 30) T.i = Math.max(T.i, best);
+    else if (bd > 42){ T.active = false; T.slip = Date.now(); vib(40); }
+  }
+  else if (T.type==='drag'){ if (T.dr>=0){ T.sc[T.dr].x = p.x; T.sc[T.dr].y = p.y; } }
+  else if (T.type==='pack'){
+    if (T.stage==='drag'){ if (T.dr){ T.px = p.x; T.py = p.y; } }
+    else swipeMove(T,p);
+  }
+}
+function taskUp(T,p){
+  if (T.type==='cut' || (T.type==='pack' && T.stage==='tape')) T.active = false;
+  else if (T.type==='hold'){ if (T.hs){ T.hs = 0; T.fill = 0; } }
+  else if (T.type==='trace') T.active = false;
+  else if (T.type==='drag' && T.dr>=0){
+    const s = T.sc[T.dr];
+    const hi = T.holes.findIndex(h=>!h.f && Math.hypot(h.x-s.x,h.y-s.y) < 34);
+    if (hi>=0){ s.x = T.holes[hi].x; s.y = T.holes[hi].y; s.h = hi; T.holes[hi].f = true; vib(15); }
+    else { s.x = s.hx; s.y = s.hy; }
+    T.dr = -1;
+  }
+  else if (T.type==='pack' && T.stage==='drag' && T.dr){
+    T.dr = false;
+    if (T.px>178 && T.px<306 && T.py>100 && T.py<212){ T.stage='tape'; T.px=242; T.py=158; vib(15); }
+    else { T.px=T.hx; T.py=T.hy; }
+  }
+}
+function holdLoop(){
+  const T = G.task; if (!T || T.type!=='hold' || !T.hs || T.done) return;
+  T.fill = Math.min(1, (performance.now()-T.hs)/600);
+  if (T.fill >= 1){ T.cur++; T.hs = 0; T.fill = 0; vib(15); taskChanged(); return; }
+  renderTask(); requestAnimationFrame(holdLoop);
+}
+function taskIsDone(T){
+  switch (T.type){
+    case 'cut': return T.prog >= 0.97;
+    case 'hold': return T.cur >= T.pts.length;
+    case 'trace': return T.i >= T.samp.length - 3;
+    case 'drag': return T.sc.every(s=>s.h>=0);
+    case 'inspect': return !!T.found;
+    case 'pack': return T.stage==='tape' && T.prog >= 0.97;
+  }
+  return false;
+}
+function taskChanged(){
+  const T = G.task; if (!T) return;
+  if (!T.done && taskIsDone(T)){ T.done = true; vib(25); trySendDone(); G.mainKey=''; updatePlayer(); return; }
+  renderTask();
+}
+function bindTask(){
+  const svg = $('#tsvg'); if (!svg) return;
+  const pt = e => { const m = svg.getScreenCTM(); if (!m) return {x:-999,y:-999}; const q = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()); return {x:q.x, y:q.y}; };
+  svg.addEventListener('pointerdown', e=>{ const T = G.task; if (!T || T.done) return; e.preventDefault(); try { svg.setPointerCapture(e.pointerId); } catch(_){} taskDown(T, pt(e)); taskChanged(); });
+  svg.addEventListener('pointermove', e=>{ const T = G.task; if (!T || T.done) return; if (e.pointerType==='mouse' && e.buttons===0) return; taskMove(T, pt(e)); taskChanged(); });
+  const up = e=>{ const T = G.task; if (!T || T.done) return; taskUp(T, pt(e)); taskChanged(); };
+  svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+}
+const PLATE = `<rect x="14" y="20" width="292" height="190" rx="14" fill="#cfd6de" stroke="#8a96a3" stroke-width="3"/>`;
+const startMark = (p, show) => show ? `<circle cx="${p.x}" cy="${p.y}" r="18" fill="#ffd24d" stroke="#1b2130" stroke-width="3" class="pulse"/><text x="${p.x}" y="${p.y-26}" text-anchor="middle" font-size="13" font-weight="900" fill="#1b2130">BAŞLA</text>` : '';
+const pts2 = arr => arr.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+function taskSVG(T){
+  const slip = T.slip && Date.now()-T.slip < 1300 ? `<text x="160" y="226" text-anchor="middle" font-size="13" font-weight="800" fill="#d64545">Çizgiden çıktın! Kaldığın yerden devam et.</text>` : '';
+  if (T.type==='cut'){
+    const P = {x:T.a.x+(T.b.x-T.a.x)*T.prog, y:T.a.y+(T.b.y-T.a.y)*T.prog};
+    return PLATE + `<line x1="${T.a.x}" y1="${T.a.y}" x2="${T.b.x}" y2="${T.b.y}" stroke="#5b6573" stroke-width="4" stroke-dasharray="10 8"/>
+      <line x1="${T.a.x}" y1="${T.a.y}" x2="${P.x}" y2="${P.y}" stroke="#d64545" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="${T.b.x}" cy="${T.b.y}" r="8" fill="#1b2130"/>` + startMark(T.a, T.prog<0.02 && !T.active) +
+      `<text x="${P.x}" y="${P.y+11}" text-anchor="middle" font-size="30">✂️</text>` + slip;
+  }
+  if (T.type==='hold'){
+    return PLATE + T.pts.map((h,i)=>{
+      if (i < T.cur) return `<circle cx="${h.x}" cy="${h.y}" r="22" fill="#1b2130"/><text x="${h.x}" y="${h.y+7}" text-anchor="middle" font-size="20" fill="#fff">✓</text>`;
+      if (i === T.cur) return `<circle cx="${h.x}" cy="${h.y}" r="27" fill="#fff" stroke="#8a96a3" stroke-width="3" class="${T.hs?'':'pulse'}"/>
+        <circle cx="${h.x}" cy="${h.y}" r="27" fill="none" stroke="#2e9e5b" stroke-width="9" stroke-dasharray="${(T.fill*170).toFixed(1)} 170" transform="rotate(-90 ${h.x} ${h.y})"/>
+        <text x="${h.x}" y="${h.y+8}" text-anchor="middle" font-size="22" font-weight="900" fill="#1b2130">${i+1}</text>`;
+      return `<circle cx="${h.x}" cy="${h.y}" r="22" fill="#fff" stroke="#9aa3ad" stroke-width="3" stroke-dasharray="5 5"/><text x="${h.x}" y="${h.y+7}" text-anchor="middle" font-size="18" font-weight="800" fill="#9aa3ad">${i+1}</text>`;
+    }).join('');
+  }
+  if (T.type==='trace'){
+    const P = T.samp[T.i], end = T.path[T.path.length-1];
+    return PLATE + `<polyline points="${pts2(T.path)}" fill="none" stroke="#5b6573" stroke-width="5" stroke-dasharray="3 8" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="${pts2(T.samp.slice(0,T.i+1))}" fill="none" stroke="#ffb35c" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+      <polyline points="${pts2(T.samp.slice(0,T.i+1))}" fill="none" stroke="#e8590c" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${end.x}" cy="${end.y}" r="8" fill="#1b2130"/>` + startMark(T.path[0], T.i===0 && !T.active) +
+      `<text x="${P.x}" y="${P.y+10}" text-anchor="middle" font-size="28">🔥</text>` + slip;
+  }
+  if (T.type==='drag'){
+    return `<rect x="14" y="14" width="292" height="148" rx="14" fill="#cfd6de" stroke="#8a96a3" stroke-width="3"/>
+      <rect x="14" y="170" width="292" height="56" rx="10" fill="#e9ecef" stroke="#c7cdd4" stroke-width="2"/><text x="22" y="184" font-size="11" fill="#667085" font-weight="700">VİDA KUTUSU</text>` +
+      T.holes.map(h=>`<circle cx="${h.x}" cy="${h.y}" r="18" fill="${h.f?'#1b2130':'#5b6573'}" stroke="#2c333d" stroke-width="3"/>${h.f?'':`<circle cx="${h.x}" cy="${h.y}" r="26" fill="none" stroke="#ffd24d" stroke-width="3" stroke-dasharray="4 5"/>`}`).join('') +
+      T.sc.map(s=>`<g><circle cx="${s.x}" cy="${s.y}" r="16" fill="#c3cad2" stroke="#3d4652" stroke-width="3"/><path d="M${s.x-8} ${s.y}H${s.x+8}M${s.x} ${s.y-8}V${s.y+8}" stroke="#3d4652" stroke-width="3"/></g>`).join('');
+  }
+  if (T.type==='inspect'){
+    const cells = [[12,12],[164,12],[12,118],[164,118]];
+    return cells.map(([x,y],i)=>{
+      const w=144, h=98, holes=[[x+22,y+20],[x+w-22,y+20],[x+22,y+h-20],[x+w-22,y+h-20]];
+      let extra = '', hs = holes;
+      if (i===T.bad){
+        if (T.kind==='eksik') hs = holes.filter((_,k)=>k!==((T.bad+1)%4));
+        if (T.kind==='fazla') extra = `<circle cx="${x+w/2+10}" cy="${y+h/2-4}" r="7" fill="#3d4652"/>`;
+        if (T.kind==='catlak') extra = `<path d="M${x+40} ${y+30} l12 10 l-6 12 l14 9 l-5 14" fill="none" stroke="#2c2424" stroke-width="2.4"/>`;
+      }
+      const wrong = i===T.wrongAt && Date.now()-T.wrongT < 700;
+      return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${wrong?'#fde2e2':'#cfd6de'}" stroke="${wrong?'#d64545':'#8a96a3'}" stroke-width="3"/>` +
+        hs.map(([cx,cy])=>`<circle cx="${cx}" cy="${cy}" r="7" fill="#3d4652"/>`).join('') + extra +
+        (wrong ? `<text x="${x+w/2}" y="${y+h/2+10}" text-anchor="middle" font-size="30" fill="#d64545">✗</text>` : '');
+    }).join('');
+  }
+  if (T.type==='pack'){
+    const tape = T.stage==='tape';
+    const P = {x:T.a.x+(T.b.x-T.a.x)*T.prog, y:T.a.y};
+    return `<rect x="178" y="100" width="128" height="112" fill="#c89a5b" stroke="#8d6a33" stroke-width="3"/>
+      <path d="M178 100 L160 78 M306 100 L322 78" stroke="#8d6a33" stroke-width="3"/><text x="242" y="226" text-anchor="middle" font-size="11" fill="#667085" font-weight="700">KOLİ</text>
+      <g><rect x="${T.px-34}" y="${T.py-34}" width="68" height="68" rx="6" fill="#eef1f4" stroke="#5b6573" stroke-width="3"/><circle cx="${T.px}" cy="${T.py+4}" r="16" fill="#cfd6de" stroke="#5b6573" stroke-width="2"/><rect x="${T.px-26}" y="${T.py-28}" width="52" height="8" rx="2" fill="#9aa3ad"/></g>` +
+      (tape ? `<line x1="${T.a.x}" y1="${T.a.y}" x2="${T.b.x}" y2="${T.b.y}" stroke="#8d6a33" stroke-width="3" stroke-dasharray="8 6"/>
+        <line x1="${T.a.x}" y1="${T.a.y}" x2="${P.x}" y2="${P.y}" stroke="#e3c27a" stroke-width="14" stroke-linecap="round" opacity=".9"/>` + startMark(T.a, T.prog<0.02 && !T.active) +
+        `<circle cx="${P.x}" cy="${P.y}" r="11" fill="#fff" stroke="#8d6a33" stroke-width="4"/>`
+      : `<text x="72" y="196" text-anchor="middle" font-size="12" font-weight="800" fill="#1b2130">ÜRÜN</text><path d="M118 140 h44 m-10 -8 l10 8 l-10 8" stroke="#1b2130" stroke-width="3" fill="none"/>`) + slip;
+  }
+  return '';
+}
+function taskStatus(T){
+  switch (T.type){
+    case 'cut': return `✂️ Kesilen: %${Math.round(T.prog*100)}`;
+    case 'hold': return `🔩 Delik ${Math.min(T.cur+1, T.pts.length)}/${T.pts.length} — basılı tut`;
+    case 'trace': return `🔥 Dikiş: %${Math.round(T.i/(T.samp.length-1)*100)}`;
+    case 'drag': return `🔧 Takılan vida: ${T.sc.filter(s=>s.h>=0).length}/3`;
+    case 'inspect': return `🔍 Kusurlu parçaya dokun${T.wrong ? ' · yanlış: ' + T.wrong : ''}`;
+    case 'pack': return T.stage==='drag' ? '📦 1) Ürünü koliye sürükle' : `📦 2) Bandı soldan sağa çek: %${Math.round(T.prog*100)}`;
+  }
+  return '';
+}
+function renderTask(){
+  const T = G.task, svg = $('#tsvg'); if (!T || !svg) return;
+  svg.innerHTML = taskSVG(T);
+  setHTML($('#tstat'), taskStatus(T));
 }
 
 /* ---------------- Başlat ---------------- */
