@@ -157,6 +157,48 @@ h1,h2,h3{margin:.2em 0 .4em}
 .shake{animation:shk .25s}
 @keyframes shk{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .warn{background:#fff3cd;border:1px solid #f0d58a;color:#6d5000;border-radius:10px;padding:8px 12px;font-size:.88em}
+
+/* ---------- karşılaştırma ekranı ---------- */
+.cmpT{font-size:1.5em;font-weight:800;margin:2px 0 12px}
+.cmpT small{display:block;font-size:.55em;font-weight:500;color:var(--mut);margin-top:2px}
+.heads{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+@media (max-width:1100px){.heads{grid-template-columns:1fr 1fr}}
+.hcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;position:relative;overflow:hidden}
+.hcard .l{font-size:.9em;font-weight:700;color:var(--mut)}
+.hcard .big{font-size:2.7em;font-weight:900;line-height:1.05;margin:4px 0}
+.hcard .big.good{color:var(--kan)}
+.hcard .vs{display:flex;gap:10px;align-items:baseline;font-weight:800;font-size:1.15em}
+.hcard .vs .p{color:var(--push)}.hcard .vs .k{color:var(--kan)}
+.hcard .note{font-size:.8em;color:var(--mut);margin-top:4px}
+.cmpgrid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+@media (max-width:1200px){.cmpgrid{grid-template-columns:1fr}}
+.ctbl{width:100%;border-collapse:collapse}
+.ctbl th,.ctbl td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.ctbl th:first-child,.ctbl td:first-child{text-align:left}
+.ctbl thead th{font-size:.95em}
+.ctbl thead th.p{color:#fff;background:var(--push);border-radius:8px 8px 0 0}
+.ctbl thead th.k{color:#fff;background:var(--kan);border-radius:8px 8px 0 0}
+.ctbl td.p{background:#fdf1f1;font-weight:700}
+.ctbl td.k{background:#eef8f4;font-weight:700}
+.ctbl td .u{font-size:.75em;color:var(--mut);font-weight:500}
+.ctbl td.d{font-weight:800;white-space:nowrap}
+.d.good{color:var(--kan)}.d.bad{color:var(--push)}.d.neu{color:var(--mut)}
+.snapwrap h3{margin:0 0 6px}
+.snap{display:flex;align-items:flex-end;gap:4px;padding:8px 6px;border-radius:12px;margin-bottom:8px;overflow-x:auto}
+.snap.p{background:#fdf1f1;border:1px solid #f3c9c9}.snap.k{background:#eef8f4;border:1px solid #bfe6d6}
+.snap .tag{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:900;color:#fff;border-radius:6px;padding:6px 3px;align-self:stretch;text-align:center;font-size:.8em}
+.snap.p .tag{background:var(--push)}.snap.k .tag{background:var(--kan)}
+.snap .sn{min-width:66px;text-align:center;font-size:.72em;font-weight:700;background:#fff;border:2px solid var(--line);border-radius:8px;padding:4px 3px;line-height:1.2}
+.snap .sn.bt{border-color:#1b2130}
+.snap .pile{min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.snap .pile .n{font-weight:900;font-size:1.05em}
+.snap .pile .n.hot{color:var(--push)}
+.snap .pile .st{display:flex;flex-wrap:wrap-reverse;width:44px;gap:1px;justify-content:center}
+.snap .pile .st i{width:9px;height:7px;background:#c49a5a;border:1px solid #8d6a33;border-radius:1px}
+.snap .end{min-width:64px;flex-shrink:0;text-align:center;font-size:.72em;font-weight:700}
+.snap .end b{display:block;font-size:1.5em}
+.msgs{margin:0;padding-left:1.1em;line-height:1.45}
+.msgs li{margin:.35em 0}
 </style>
 </head>
 <body>
@@ -224,25 +266,37 @@ function createTransport(b, room, subs, onMsg, onStatus){
     setTimeout(()=>onStatus('ok','Yerel test kanalı'), 30);
     return { pub(sub,obj){ ch.postMessage({sub,obj}); }, close(){ ch.close(); } };
   }
-  const br = BROKERS[+b] || BROKERS[0];
-  let client = null, closed = false;
+  // 'A' = otomatik: tüm sunuculara aynı anda bağlan, hangisi çalışıyorsa onu kullan
+  const list = b === 'A' ? BROKERS.slice() : [BROKERS[+b] || BROKERS[0]];
+  const clients = [];
+  let closed = false, libErr = '';
   const dec = new TextDecoder();
-  onStatus('wait', br.name + ' sunucusuna bağlanıyor…');
+  const report = ()=>{
+    const ok = clients.filter(c=>c.connected).map(c=>c._kl);
+    if (ok.length) onStatus('ok', 'Bağlı: ' + ok.join(', '));
+    else if (libErr) onStatus('err', libErr);
+    else onStatus('wait', 'Sunucuya bağlanıyor…');
+  };
+  onStatus('wait', 'Sunucuya bağlanıyor…');
   ensureMqtt().then(()=>{
     if (closed) return;
-    client = mqtt.connect(br.url, {clientId:'kl_'+Math.random().toString(36).slice(2,10), clean:true, connectTimeout:8000, reconnectPeriod:2000, keepalive:30});
-    client.on('connect', ()=>{ onStatus('ok','Bağlı (' + br.name + ')'); client.subscribe(subs.map(s=>base+s), {qos:0}); });
-    client.on('reconnect', ()=>onStatus('wait','Yeniden bağlanıyor…'));
-    client.on('offline', ()=>onStatus('err','Bağlantı yok'));
-    client.on('error', e=>onStatus('err','Hata: ' + (e && e.message || e)));
-    client.on('message', (topic, payload)=>{
-      const sub = topic.slice(base.length);
-      try { onMsg(sub, JSON.parse(typeof payload==='string' ? payload : dec.decode(payload))); } catch(e){}
+    list.forEach(br=>{
+      let c;
+      try { c = mqtt.connect(br.url, {clientId:'kl_'+Math.random().toString(36).slice(2,10), clean:true, connectTimeout:8000, reconnectPeriod:3000, keepalive:30}); }
+      catch(e){ return; }
+      c._kl = br.name; clients.push(c);
+      c.on('connect', ()=>{ c.subscribe(subs.map(s=>base+s), {qos:0}); report(); });
+      c.on('close', report); c.on('offline', report); c.on('error', report);
+      c.on('message', (topic, payload)=>{
+        const sub = topic.slice(base.length);
+        try { onMsg(sub, JSON.parse(typeof payload==='string' ? payload : dec.decode(payload))); } catch(e){}
+      });
     });
-  }).catch(e=>onStatus('err', e.message));
+    setTimeout(()=>{ if (!clients.some(c=>c.connected)) onStatus('err', 'Sunuculara ulaşılamıyor — ağı değiştirin (mobil veri)'); }, 12000);
+  }).catch(e=>{ libErr = e.message; report(); });
   return {
-    pub(sub,obj,retain){ if (client && client.connected) client.publish(base+sub, JSON.stringify(obj), {qos:0, retain:!!retain}); },
-    close(){ closed = true; if (client) client.end(true); }
+    pub(sub,obj,retain){ const m = JSON.stringify(obj); clients.forEach(c=>{ if (c.connected) c.publish(base+sub, m, {qos:0, retain:!!retain}); }); },
+    close(){ closed = true; clients.forEach(c=>c.end(true)); }
   };
 }
 
@@ -321,7 +375,7 @@ function renderLanding(){
         <h2>👩‍🏫 Eğitmen ekranı</h2>
         <p class="mut small">Projeksiyona yansıtılacak ekran. Oyunu yönetir, QR kodunu ve sonuçları gösterir.</p>
         <label class="small mut">Bağlantı sunucusu<br>
-          <select id="lb">${BROKERS.map((b,i)=>`<option value="${i}">${i+1}. ${b.name}</option>`).join('')}<option value="L">Tek bilgisayarda test (sekmeler)</option></select>
+          <select id="lb"><option value="A">Otomatik (tüm sunucular) — önerilen</option>${BROKERS.map((b,i)=>`<option value="${i}">Yalnızca ${i+1}. ${b.name}</option>`).join('')}<option value="L">Tek bilgisayarda test (sekmeler)</option></select>
         </label>
         <p><button id="goHost">Eğitmen ekranını aç</button></p>
       </div>
@@ -333,8 +387,8 @@ function renderLanding(){
       </div>
     </div>
   </div>`;
-  $('#goHost').onclick = ()=>{ location.search = '?rol=egitmen' + ($('#lb').value!=='0' ? '&b='+$('#lb').value : ''); };
-  $('#goPlay').onclick = ()=>{ const c = $('#lc').value.trim().toUpperCase(); if (c) location.search = '?oda=' + encodeURIComponent(c) + ($('#lb').value!=='0' ? '&b='+$('#lb').value : ''); };
+  $('#goHost').onclick = ()=>{ location.search = '?rol=egitmen' + ($('#lb').value!=='A' ? '&b='+$('#lb').value : ''); };
+  $('#goPlay').onclick = ()=>{ const c = $('#lc').value.trim().toUpperCase(); if (c) location.search = '?oda=' + encodeURIComponent(c) + ($('#lb').value!=='A' ? '&b='+$('#lb').value : ''); };
 }
 
 /* =====================================================================
@@ -352,7 +406,7 @@ function startHost(b){
     settings:{n:5, bott:2, bt:7, round:240, K:1, mode:'push'},
     phase:'lobby', sim:null, rounds:[], cdEnd:0, conn:{s:'wait',m:'…'}, lastPub:0, dirty:true, lastTick:Date.now(), view:''
   };
-  H.tr = createTransport(b, code, ['act'], hostOnMsg, (s,m)=>{ H.conn={s,m}; H.dirty=true; });
+  H.tr = createTransport(b, code, ['act','state'], hostOnMsg, (s,m)=>{ H.conn={s,m}; H.dirty=true; });
   setInterval(hostTick, 100);
   setInterval(hostRender, 250);
   window.addEventListener('resize', ()=>{ H.view=''; });
@@ -374,6 +428,7 @@ function autoAssign(p){
   p.st = null; // gözlemci
 }
 function hostOnMsg(sub, m){
+  if (sub === 'state'){ if (m && m.v===1) H.lastEcho = now(); return; }
   if (sub !== 'act' || !m || !m.pid) return;
   let p = H.players[m.pid];
   if (!p){
@@ -418,7 +473,7 @@ function newSim(){
   return {
     mode:s.mode, K:s.K, n:s.n, bott:s.bott, bt:s.bt, dur:s.round*1000, keys,
     st: keys.map((k,j)=>({key:k, mt:(j===s.bott ? s.bt : LIB[k].mt), targets:LIB[k].targets, job:null, busy:0, count:0, botAt:0, starvedMs:0, blockedMs:0})),
-    buf: keys.map(()=>[]), nextId:1, released:0, shipped:[], wipS:[], t0:0, end:0, lastSample:0, lastT:0
+    buf: keys.map(()=>[]), maxBuf: keys.map(()=>0), nextId:1, released:0, shipped:[], wipS:[], t0:0, end:0, lastSample:0, lastT:0
   };
 }
 function canStart(S,j){
@@ -465,7 +520,7 @@ function hostTick(){
       if (job && job.ph==='x' && te >= job.e){
         st.busy += job.e - job.t; st.count++;
         if (j===S.n-1) S.shipped.push({id:job.u.id, rel:job.u.rel, ship:job.e, lt:job.e - job.u.rel});
-        else S.buf[j].push(job.u);
+        else { S.buf[j].push(job.u); if (S.buf[j].length > S.maxBuf[j]) S.maxBuf[j] = S.buf[j].length; }
         st.job = null; changed = true;
       }
     }
@@ -512,13 +567,22 @@ function finishRound(){
     little: th>0 ? avgWip/(th/60) : NaN,
     util:S.st.map(st=>Math.min(100, st.busy/S.dur*100)),
     starved:S.st.map(st=>st.starvedMs/S.dur*100), blocked:S.st.map(st=>st.blockedMs/S.dur*100),
-    wipS:S.wipS.slice(), ltS:sh.map(x=>[(x.ship-S.t0)/1000, x.lt/1000])
+    wipS:S.wipS.slice(), ltS:sh.map(x=>[(x.ship-S.t0)/1000, x.lt/1000]),
+    endBuf:S.buf.map(x=>x.length), endProc:S.st.map(st=>st.job?1:0), maxBuf:S.maxBuf.slice(),
+    counts:S.st.map(st=>st.count), waitPM: avgWip*T/60
   };
   stats.label = 'Tur ' + stats.idx + ': ' + (S.mode==='push' ? 'İtme' : 'Kanban K=' + S.K);
   H.rounds.push(stats);
   H.phase = 'res'; H.dirty = true;
   if (S.mode==='push') H.settings.mode = 'kanban';
+  if (S.mode==='kanban' && H.rounds.some(r=>r.mode==='push')){
+    H.cmpK = H.rounds.length-1; H.cmpP = lastIdx('push'); H.showCmp = true;
+  } else if (S.mode==='push' && H.rounds.some(r=>r.mode==='kanban')){
+    H.cmpP = H.rounds.length-1; H.cmpK = lastIdx('kanban'); H.showCmp = true;
+  } else H.showCmp = false;
 }
+function lastIdx(mode){ for (let i=H.rounds.length-1;i>=0;i--) if (H.rounds[i].mode===mode) return i; return -1; }
+function canCompare(){ return lastIdx('push')>=0 && lastIdx('kanban')>=0; }
 function hostStartRound(){
   normalizeAssign();
   H.sim = newSim(); H.phase='cd'; H.cdEnd = now()+3000; H.dirty = true;
@@ -546,17 +610,19 @@ function hostState(){
 /* ---------------- Eğitmen ekranı çizimi ---------------- */
 function joinURL(){
   const base = location.origin + location.pathname;
-  return base + '?oda=' + H.code + (H.b !== '0' ? '&b=' + H.b : '');
+  return base + '?oda=' + H.code + (H.b !== 'A' ? '&b=' + H.b : '');
 }
 function hostRender(){
-  const ph = H.phase === 'cd' ? 'run' : H.phase;
+  const ph = H.phase === 'cd' ? 'run' : (H.phase==='res' && H.showCmp && canCompare()) ? 'cmp' : H.phase;
   if (H.view !== ph){
     H.view = ph;
     if (ph==='lobby') hostBuildLobby();
     else if (ph==='run') hostBuildLive();
+    else if (ph==='cmp') hostBuildCompare();
     else hostBuildResults();
   }
-  const conn = $('#conn'); if (conn) setHTML(conn, `<span class="chip ${H.conn.s}">● ${esc(H.conn.m)}</span>`);
+  const echoOk = H.b==='L' || (H.lastEcho && now()-H.lastEcho < 5000);
+  const conn = $('#conn'); if (conn) setHTML(conn, `<span class="chip ${H.conn.s}">● ${esc(H.conn.m)}</span>` + (H.conn.s==='ok' ? (echoOk ? ' <span class="chip ok">✓ Yayın doğrulandı</span>' : ' <span class="chip err">✘ Yayın doğrulanamadı</span>') : ''));
   if (ph==='lobby' || ph==='res'){ hostUpdateSlots(); }
   if (ph==='run') hostUpdateLive();
 }
@@ -776,7 +842,7 @@ function hostBuildResults(){
     ['Darboğaz kullanım oranı (%)', r=>Math.round(r.util[r.bott])+'%'],
     ['Diğer istasyonların ort. kullanım oranı (%)', r=>Math.round(mean(r.util.filter((_,i)=>i!==r.bott)))+'%']
   ];
-  $('#app').innerHTML = `<div class="host">${topBar('<button class="ghost" id="resetBtn">Sonuçları sıfırla</button>')}
+  $('#app').innerHTML = `<div class="host">${topBar((canCompare()?'<button class="green" id="cmpBtn">📊 İtme – Kanban karşılaştırması</button>':'') + '<button class="ghost" id="resetBtn">Sonuçları sıfırla</button>')}
     ${eff}
     <div class="card" style="margin-bottom:12px;overflow-x:auto">
       <table class="tbl"><thead><tr><th>Gösterge</th>${R.map((r,i)=>`<th style="color:${ROUND_COLORS[i%6]}">${esc(r.label)}</th>`).join('')}</tr></thead>
@@ -805,12 +871,130 @@ function hostBuildResults(){
     </div></div>`;
   bindSettings($('#app')); bindSlots();
   $('#startBtn').onclick = hostStartRound;
-  $('#resetBtn').onclick = ()=>{ if (H._rc && now()-H._rc<3000){ H.rounds=[]; H.settings.mode='push'; H.phase='lobby'; H.view=''; H.dirty=true; } else { H._rc = now(); $('#resetBtn').textContent='Emin misiniz? Tekrar tıklayın'; } };
+  if ($('#cmpBtn')) $('#cmpBtn').onclick = ()=>{ if (H.cmpP==null || !H.rounds[H.cmpP]) H.cmpP = lastIdx('push'); if (H.cmpK==null || !H.rounds[H.cmpK]) H.cmpK = lastIdx('kanban'); H.showCmp = true; };
+  $('#resetBtn').onclick = ()=>{ if (H._rc && now()-H._rc<3000){ H.rounds=[]; H.settings.mode='push'; H.showCmp=false; H.cmpP=null; H.cmpK=null; H.phase='lobby'; H.view=''; H.dirty=true; } else { H._rc = now(); $('#resetBtn').textContent='Emin misiniz? Tekrar tıklayın'; } };
   requestAnimationFrame(()=>{
     const xMax = Math.max(...R.map(r=>r.T));
     lineChart($('#rW'), R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], pts:r.wipS})), {xMax, xLabel:'zaman (sn)', yLabel:'adet'});
     lineChart($('#rL'), R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], pts:r.ltS, dots:true})), {xMax, xLabel:'sevk anı (sn)', yLabel:'sn'});
     barChart($('#rU'), R[R.length-1].names, R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], vals:r.util})), {yMax:100, unit:'%'});
+  });
+}
+
+
+/* ---------------- İtme – Kanban karşılaştırma ekranı ---------------- */
+const CP = '#d64545', CK = '#0f8a6c';
+function bufName(r,j){ return r.names[j] + ' → ' + r.names[j+1]; }
+function littleTxt(who, wip, calc){
+  if (!(wip>0) || !(calc>0)) return who + ' hesaplanamadı (sevk edilen ürün yok).';
+  const ok = Math.abs(calc - wip) / wip <= 0.3;
+  return ok ? `${who} ortalama WIP ${fmt1(wip)}, hesaplanan ${fmt1(calc)} → <b>tutuyor ✔</b> (hat kararlı).`
+            : `${who} ortalama WIP ${fmt1(wip)}, hesaplanan ${fmt1(calc)} → <b>tutmuyor ✘</b> (stok büyümeye devam ediyor; hat kararlı değil).`;
+}
+function snapHTML(r, cls){
+  let h = `<div class="snap ${cls}"><div class="tag">${cls==='p'?'İTME':'KANBAN'}</div><div class="end">🏗️<br>Hammadde</div>`;
+  for (let j=0;j<r.n;j++){
+    h += `<div class="sn ${j===r.bott?'bt':''}">${esc(r.names[j])}${j===r.bott?'<br><span class="bn">DARBOĞAZ</span>':''}<br><span class="mut">işlenen ${r.counts[j]}</span></div>`;
+    if (j<r.n-1){
+      const q = r.endBuf[j], show = Math.min(q, 60);
+      h += `<div class="pile"><div class="n ${q>=6?'hot':''}">${q}</div><div class="st">${'<i></i>'.repeat(show)}</div></div>`;
+    }
+  }
+  h += `<div class="end">🚚<br>Müşteri<b>${r.shipped}</b></div></div>`;
+  return h;
+}
+function diffCell(pv, kv, kind){
+  if (!(pv>0) || isNaN(kv)) return '<td class="d neu">—</td>';
+  const x = (kv-pv)/pv*100;
+  if (kind==='same' || kind==='info'){
+    if (Math.abs(x) <= 10) return '<td class="d neu">≈ aynı</td>';
+    return `<td class="d neu">${x>0?'▲':'▼'} %${Math.abs(Math.round(x))}</td>`;
+  }
+  // kind === 'low' : düşük daha iyi
+  if (Math.abs(x) < 3) return '<td class="d neu">≈ aynı</td>';
+  return `<td class="d ${x<0?'good':'bad'}">${x<0?'▼':'▲'} %${Math.abs(Math.round(x))}</td>`;
+}
+function hostBuildCompare(){
+  const R = H.rounds;
+  if (H.cmpP==null || !R[H.cmpP] || R[H.cmpP].mode!=='push') H.cmpP = lastIdx('push');
+  if (H.cmpK==null || !R[H.cmpK] || R[H.cmpK].mode!=='kanban') H.cmpK = lastIdx('kanban');
+  const p = R[H.cmpP], k = R[H.cmpK];
+  const pushIdx = R.map((r,i)=>r.mode==='push'?i:-1).filter(i=>i>=0), kanIdx = R.map((r,i)=>r.mode==='kanban'?i:-1).filter(i=>i>=0);
+  const sel = (id, list, cur)=> list.length>1 ? `<select id="${id}">${list.map(i=>`<option value="${i}" ${i===cur?'selected':''}>${esc(R[i].label)}</option>`).join('')}</select>` : '';
+  const others = r => mean(r.util.filter((_,i)=>i!==r.bott));
+  const maxQ = r => { let m=-1, at=0; r.maxBuf.forEach((v,j)=>{ if (v>m){ m=v; at=j; } }); return {m, at}; };
+  const pq = maxQ(p), kq = maxQ(k);
+  const ltRatio = k.last5>0 ? p.last5/k.last5 : NaN;
+  const wipCut = p.avgWip>0 ? (1 - k.avgWip/p.avgWip)*100 : NaN;
+  const outDiff = p.shipped>0 ? (k.shipped-p.shipped)/p.shipped*100 : 0;
+  const sameOut = Math.abs(outDiff) <= 10;
+  const bName = p.names[p.bott];
+
+  const rows = [
+    ['Sevk edilen ürün', 'adet', r=>r.shipped, 'same', 0],
+    ['Çıktı hızı', 'adet/dk', r=>r.th, 'same', 1],
+    ['Hatta başlatılan parça', 'adet', r=>r.released, 'low', 0],
+    ['Ortalama yarı mamul stok (WIP)', 'adet', r=>r.avgWip, 'low', 1],
+    ['Tur sonunda hatta kalan stok', 'adet', r=>r.endWip, 'low', 0],
+    ['En kalabalık ara stok', 'adet', r=>maxQ(r).m, 'low', 0],
+    ['Ortalama çevrim süresi', 'sn', r=>r.avgLT, 'low', 0],
+    ['Son 5 ürünün çevrim süresi', 'sn', r=>r.last5, 'low', 0],
+    ['En uzun çevrim süresi', 'sn', r=>r.maxLT, 'low', 0],
+    ['Bekleme yükü (stok × süre)', 'parça·dk', r=>r.waitPM, 'low', 0],
+    ['Darboğaz kullanım oranı', '%', r=>r.util[r.bott], 'same', 0],
+    ['Diğer istasyonların kullanım oranı', '%', r=>others(r), 'info', 0]
+  ];
+  const f = (v,d)=> (v==null||isNaN(v)) ? '—' : (d ? fmt1(v) : Math.round(v).toLocaleString('tr-TR'));
+
+  const littleK = k.th/60*k.avgLT, littleP = p.th/60*p.avgLT;
+  const msgs = [
+    `<b>Çıktı:</b> Müşteriye itmede <b>${p.shipped}</b>, kanbanda <b>${k.shipped}</b> ürün sevk edildi. ${sameOut ? 'Çıktı neredeyse aynı, çünkü hattın hızını <b>'+esc(bName)+'</b> darboğazı belirliyor.' : 'Fark var; darboğaz önündeki kart sayısını (K) tartışın.'}`,
+    `<b>Stok:</b> İtmede hatta <b>${p.released}</b> parça başlatıldı, ama yalnızca ${p.shipped} tanesi sevk edildi. Tur sonunda <b>${p.endWip}</b> parça yarı mamul olarak kaldı; kanbanda bu sayı <b>${k.endWip}</b>.`,
+    `<b>Nerede birikti?</b> İtmede stok en çok <b>${esc(bufName(p,pq.at))}</b> arasında birikti (en yüksek <b>${pq.m}</b> adet). Kanbanda en kalabalık ara stok ${kq.m} adet.`,
+    `<b>Hız:</b> Son ürünler hattı itmede <b>${Math.round(p.last5)} sn</b>, kanbanda <b>${Math.round(k.last5)} sn</b>'de geçti${isNaN(ltRatio)?'.':ltRatio>=1.15?' — kanbanda yaklaşık <b>'+fmt1(ltRatio)+' kat</b> daha hızlı.':ltRatio<=0.87?' — kanbanda daha yavaş; kart sayısını (K) tartışın.':' — fark yok. Tur kısa kaldıysa itmedeki stok henüz çevrim süresine yansımamış olabilir.'}`,
+    `<b>Little Yasası</b> (WIP = çıktı hızı × çevrim süresi): ` + littleTxt('Kanbanda', k.avgWip, littleK) + ' ' + littleTxt('İtmede', p.avgWip, littleP),
+    `<b>Meşguliyet ≠ verimlilik:</b> Darboğaz dışındaki istasyonlar itmede %${Math.round(others(p))}, kanbanda %${Math.round(others(k))} oranında çalıştı. Fazla çalışma çıktıyı artırmadı, yalnızca stok üretti.`
+  ];
+
+  $('#app').innerHTML = `<div class="host">${topBar(`${sel('selP',pushIdx,H.cmpP)}${sel('selK',kanIdx,H.cmpK)}<button class="ghost" id="fsBtn">⛶ Tam ekran</button><button class="ghost" id="backBtn">← Sonuçlar ve sonraki tur</button>`)}
+    <div class="cmpT">İtme mi, Kanban mı? <span class="badge push">${esc(p.label)}</span> vs <span class="badge kanban">${esc(k.label)}</span>
+      <small>Aynı hat · aynı darboğaz (${esc(bName)}, ${p.bt} sn) · ${Math.round(p.T/60*10)/10} dakikalık turlar · tek fark üretimin nasıl kontrol edildiği</small></div>
+    <div class="heads">
+      <div class="hcard"><div class="l">📦 Müşteriye sevk edilen</div><div class="big ${sameOut?'':''}">${sameOut?'≈ Aynı':(outDiff>0?'+':'')+Math.round(outDiff)+'%'}</div>
+        <div class="vs"><span class="p">${p.shipped}</span><span class="mut">→</span><span class="k">${k.shipped}</span><span class="mut small">adet</span></div><div class="note">Çıktıyı darboğaz belirler</div></div>
+      <div class="hcard"><div class="l">🏭 Ortalama yarı mamul stok</div><div class="big good">${isNaN(wipCut)?'—':'▼ %'+Math.round(wipCut)}</div>
+        <div class="vs"><span class="p">${fmt1(p.avgWip)}</span><span class="mut">→</span><span class="k">${fmt1(k.avgWip)}</span><span class="mut small">adet</span></div><div class="note">Tur sonunda: ${p.endWip} → ${k.endWip} adet</div></div>
+      <div class="hcard"><div class="l">⏱️ Çevrim süresi (son 5 ürün)</div><div class="big ${ltRatio>=1.15?'good':''}">${isNaN(ltRatio)?'—':ltRatio>=1.15?fmt1(ltRatio)+'× hızlı':ltRatio<=0.87?fmt1(1/ltRatio)+'× yavaş':'≈ Aynı'}</div>
+        <div class="vs"><span class="p">${Math.round(p.last5)} sn</span><span class="mut">→</span><span class="k">${Math.round(k.last5)} sn</span></div><div class="note">Ortalama: ${Math.round(p.avgLT)} → ${Math.round(k.avgLT)} sn</div></div>
+      <div class="hcard"><div class="l">💤 Bekleme yükü (stok × süre)</div><div class="big good">${p.waitPM>0?'▼ %'+Math.round((1-k.waitPM/p.waitPM)*100):'—'}</div>
+        <div class="vs"><span class="p">${Math.round(p.waitPM)}</span><span class="mut">→</span><span class="k">${Math.round(k.waitPM)}</span><span class="mut small">parça·dk</span></div><div class="note">Bağlanan sermaye / stok taşıma maliyeti göstergesi</div></div>
+    </div>
+    <div class="cmpgrid">
+      <div class="card" style="overflow-x:auto">
+        <table class="ctbl"><thead><tr><th>Gösterge</th><th class="p">İTME</th><th class="k">KANBAN</th><th>Fark</th></tr></thead>
+        <tbody>${rows.map(([l,u,fn,kind,d])=>`<tr><td>${l} <span class="mut small">(${u})</span></td><td class="p">${f(fn(p),d)}</td><td class="k">${f(fn(k),d)}</td>${diffCell(fn(p),fn(k),kind)}</tr>`).join('')}</tbody></table>
+      </div>
+      <div>
+        <div class="card snapwrap" style="margin-bottom:12px"><h3>Tur bittiğinde stok nerede bekliyordu?</h3>${snapHTML(p,'p')}${snapHTML(k,'k')}
+          <div class="small mut">Kutular: istasyonlar arasında bir sonraki işlemi bekleyen yarı mamuller.</div></div>
+        <div class="card"><h3 style="margin-top:0">Ne gördük?</h3><ul class="msgs">${msgs.map(m=>`<li>${m}</li>`).join('')}</ul></div>
+      </div>
+    </div>
+    <div class="charts3">
+      <div class="chartcard"><h3>Yarı mamul stok – zaman</h3><canvas id="xW"></canvas></div>
+      <div class="chartcard"><h3>Her ürünün çevrim süresi (sevk anına göre)</h3><canvas id="xL"></canvas></div>
+      <div class="chartcard"><h3>İstasyon kullanım oranları</h3><canvas id="xU"></canvas></div>
+    </div>
+  </div>`;
+  $('#backBtn').onclick = ()=>{ H.showCmp = false; };
+  $('#fsBtn').onclick = ()=>{ try { const d = document.documentElement; (document.fullscreenElement ? document.exitFullscreen() : d.requestFullscreen()).catch(()=>{}); } catch(e){} };
+  if ($('#selP')) $('#selP').onchange = e=>{ H.cmpP = +e.target.value; H.view=''; };
+  if ($('#selK')) $('#selK').onchange = e=>{ H.cmpK = +e.target.value; H.view=''; };
+  requestAnimationFrame(()=>{
+    const xMax = Math.max(p.T, k.T);
+    lineChart($('#xW'), [{name:'İtme', color:CP, pts:p.wipS},{name:'Kanban', color:CK, pts:k.wipS}], {xMax, xLabel:'zaman (sn)', yLabel:'adet'});
+    lineChart($('#xL'), [{name:'İtme', color:CP, pts:p.ltS, dots:true},{name:'Kanban', color:CK, pts:k.ltS, dots:true}], {xMax, xLabel:'sevk anı (sn)', yLabel:'sn'});
+    barChart($('#xU'), p.names, [{name:'İtme', color:CP, vals:p.util},{name:'Kanban', color:CK, vals:k.util}], {yMax:100, unit:'%'});
   });
 }
 
@@ -840,10 +1024,12 @@ function playerSend(o){ o.pid = G.pid; if (G.tr) G.tr.pub('act', o); }
 function playerConnect(){
   G.tr = createTransport(G.b, G.code, ['state'], (sub,o)=>{
     if (sub!=='state' || !o || o.v!==1) return;
+    if (G.S && o.now < G.S.now && G.S.now - o.now < 60000) return; // aynı durumun başka sunucudan gelen eski kopyası
     G.S = o; G.recvAt = Date.now(); playerRender();
-  }, (s,m)=>{ G.conn={s,m}; playerRender(); if (s==='ok') playerSend({t:'hb', name:G.name}); });
+  }, (s,m)=>{ if (s==='ok' && G.conn.s!=='ok') G.okSince = Date.now(); G.conn={s,m}; playerRender(); if (s==='ok') playerSend({t:'hb', name:G.name}); });
   setInterval(()=>playerSend({t:'hb', name:G.name}), 2500);
   setInterval(playerTick, 100);
+  setInterval(()=>{ if (!G.S) playerRender(); }, 2000);
   try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){}
   document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible'){ try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){} playerSend({t:'hb', name:G.name}); } });
   playerRender();
@@ -870,7 +1056,8 @@ function playerRender(){
   if (!o){
     setHTML(app, `<div class="ph"><h2>🏭 Kanban Hattı</h2><p>Merhaba <b>${esc(G.name)}</b> 👋</p>
       <div class="waitbox info"><span class="ico">📡</span>Eğitmen ekranına bağlanılıyor…<br><span class="chip ${G.conn.s}" style="margin-top:8px">${esc(G.conn.m)}</span>
-      <p class="small mut">Oda: ${esc(G.code)}</p></div></div>`);
+      <p class="small mut">Oda: ${esc(G.code)}</p>
+      ${G.conn.s==='ok' && G.okSince && Date.now()-G.okSince > 6000 ? `<div class="warn" style="text-align:left;margin-top:8px">Sunucuya bağlandın ama eğitmen ekranından veri gelmiyor. Kontrol et:<br>• Eğitmen ekranı açık ve ön planda mı?<br>• Projeksiyondaki oda kodu <b>${esc(G.code)}</b> mi?<br>• Eğitmen ekranının üstünde <b>"✓ Yayın doğrulandı"</b> yazıyor mu?</div>` : ''}</div></div>`);
     G.view = ''; return;
   }
   const me = myIdx();
@@ -1044,8 +1231,8 @@ function playerTick(){
 }
 
 /* ---------------- Başlat ---------------- */
-if (P.get('oda')) startPlayer(P.get('oda').toUpperCase().trim(), P.get('b') || '0');
-else if (P.get('rol') === 'egitmen') startHost(P.get('b') || '0');
+if (P.get('oda')) startPlayer(P.get('oda').toUpperCase().trim(), P.get('b') || 'A');
+else if (P.get('rol') === 'egitmen') startHost(P.get('b') || 'A');
 else renderLanding();
 </script>
 </body>
