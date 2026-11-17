@@ -213,6 +213,8 @@ h1,h2,h3{margin:.2em 0 .4em}
    ===================================================================== */
 const TOPIC_ROOT = 'kanbanlab-ytu-v1';
 const BROKERS = [
+  // 443 numaralı standart bağlantı noktası: okul/ev ağlarında engellenmez
+  {name:'Shiftr',    url:'wss://public.cloud.shiftr.io', opts:{username:'public', password:'public'}},
   {name:'HiveMQ',    url:'wss://broker.hivemq.com:8884/mqtt'},
   {name:'EMQX',      url:'wss://broker.emqx.io:8084/mqtt'},
   {name:'Mosquitto', url:'wss://test.mosquitto.org:8081/mqtt'}
@@ -282,7 +284,7 @@ function createTransport(b, room, subs, onMsg, onStatus){
     if (closed) return;
     list.forEach(br=>{
       let c;
-      try { c = mqtt.connect(br.url, {clientId:'kl_'+Math.random().toString(36).slice(2,10), clean:true, connectTimeout:8000, reconnectPeriod:3000, keepalive:30}); }
+      try { c = mqtt.connect(br.url, Object.assign({clientId:'kl_'+Math.random().toString(36).slice(2,10), clean:true, connectTimeout:8000, reconnectPeriod:3000, keepalive:30}, br.opts||{})); }
       catch(e){ return; }
       c._kl = br.name; clients.push(c);
       c.on('connect', ()=>{ c.subscribe(subs.map(s=>base+s), {qos:0}); report(); });
