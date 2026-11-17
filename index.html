@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1d2330">
+<title>Kanban Hat Simülasyonu</title>
+<style>
+:root{
+  --bg:#f3f4f6;--card:#fff;--ink:#1b2130;--mut:#667085;--line:#e2e5ea;
+  --push:#d64545;--kan:#0f8a6c;--r3:#3a66c4;--r4:#c98a12;
+  --work:#2e9e5b;--starve:#e0a000;--block:#3a7bd5;--idle:#9aa3ad;--accent:#1b2130;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:.6em 1em;background:var(--accent);color:#fff;font-weight:600}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+button.green{background:var(--kan)}
+button.red{background:var(--push)}
+select,input{font:inherit;padding:.5em .6em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.mut{color:var(--mut)}
+.small{font-size:.85em}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:.8em;font-weight:600;background:#eef0f3;color:var(--ink)}
+.chip.ok{background:#dcf3e7;color:#11643f}.chip.wait{background:#fff3cd;color:#7a5a00}.chip.err{background:#fde2e2;color:#9b1c1c}
+.badge{display:inline-block;padding:4px 12px;border-radius:8px;font-weight:800;letter-spacing:.04em;color:#fff}
+.badge.push{background:var(--push)}.badge.kanban{background:var(--kan)}
+.bn{display:inline-block;background:#1b2130;color:#ffd24d;font-size:.62em;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:.05em;vertical-align:middle}
+h1,h2,h3{margin:.2em 0 .4em}
+
+/* ---------- landing ---------- */
+.landing{max-width:860px;margin:0 auto;padding:28px 16px}
+.landing .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:700px){.landing .grid{grid-template-columns:1fr}}
+
+/* ---------- HOST ---------- */
+.host{padding:14px 18px;max-width:1700px;margin:0 auto;font-size:clamp(14px,1.05vw,19px)}
+.htop{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.htop .title{font-size:1.35em;font-weight:800}
+.htop .spacer{flex:1}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;letter-spacing:.12em}
+.lobby{display:grid;grid-template-columns:320px 1fr;gap:16px}
+@media (max-width:1000px){.lobby{grid-template-columns:1fr}}
+.qrbox{text-align:center}
+.qrbox #qr{display:inline-block;padding:10px;background:#fff;border-radius:10px;min-height:120px}
+.qrbox .bigcode{font-size:3em;margin:.1em 0}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.slot{border:2px solid var(--line);border-radius:12px;padding:10px;background:#fafbfc}
+.slot.has{border-color:var(--kan);background:#f1faf6}
+.slot.bot{border-style:dashed}
+.slot .nm{font-weight:800}
+.slot .who{margin:6px 0;font-size:.95em}
+.slot .acts{display:flex;gap:6px;flex-wrap:wrap}
+.slot .acts button{padding:.3em .6em;font-size:.8em}
+.settings{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:6px}
+.settings label{display:flex;flex-direction:column;gap:4px;font-size:.85em;color:var(--mut);font-weight:600}
+.rules{font-size:.92em;line-height:1.45}
+.rules li{margin:.2em 0}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.kpi .l{font-size:.8em;color:var(--mut);font-weight:600}
+.kpi .v{font-size:2.1em;font-weight:800;line-height:1.1}
+.kpi .s{font-size:.75em;color:var(--mut)}
+.line{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:6px 2px 10px;background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:12px}
+.endcap{min-width:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:700;padding:6px}
+.endcap .big{font-size:2em;font-weight:800}
+.stc{flex:1 1 0;min-width:150px;border:3px solid var(--idle);border-radius:12px;padding:8px 10px;margin:4px 0;background:#fff;cursor:pointer;user-select:none}
+.stc.s-work{border-color:var(--work);background:#f0faf4}
+.stc.s-starved{border-color:var(--starve);background:#fffaeb}
+.stc.s-blocked{border-color:var(--block);background:#eef4ff}
+.stc .sth{font-weight:800;font-size:1.02em;line-height:1.25}
+.stc .op{font-size:.85em;color:var(--mut);margin:2px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbar{height:12px;background:#e9ecef;border-radius:6px;overflow:hidden;position:relative}
+.pbar i{position:absolute;left:0;top:0;bottom:0;background:var(--work);border-radius:6px}
+.pbar.manual i{width:100%!important;background:repeating-linear-gradient(45deg,#7cc79a 0 8px,#a9dcbd 8px 16px);animation:mv 1s linear infinite;background-size:22px 22px}
+@keyframes mv{to{background-position:22px 0}}
+.stc .stt{font-size:.82em;font-weight:700;margin-top:5px}
+.stc .cnt{font-size:.8em;color:var(--mut)}
+.cards{display:flex;gap:4px;margin-top:6px;align-items:center;font-size:.75em;color:var(--mut)}
+.cards b{display:inline-block;width:16px;height:22px;border-radius:3px;border:2px solid var(--kan)}
+.cards b.u{background:var(--kan)}
+.buf{min-width:70px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:4px 4px}
+.buf .n{font-weight:800;font-size:1.4em}
+.buf .n.hot{color:var(--push)}
+.buf .stack{display:flex;flex-wrap:wrap-reverse;width:56px;gap:2px;justify-content:center;align-content:flex-start;min-height:20px}
+.buf .stack i{width:12px;height:9px;background:#c49a5a;border:1px solid #8d6a33;border-radius:2px}
+.buf .ar{color:var(--mut);font-size:1.3em;line-height:1}
+.charts2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.charts3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media (max-width:1100px){.charts2,.charts3{grid-template-columns:1fr}}
+.chartcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chartcard h3{font-size:.95em;margin:0 0 4px}
+.chartcard canvas{width:100%;height:270px;display:block}
+.cd{position:fixed;inset:0;background:rgba(27,33,48,.88);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50}
+.cd .n{font-size:22vh;font-weight:900;line-height:1}
+.tbl{width:100%;border-collapse:collapse;font-size:.95em}
+.tbl th,.tbl td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl thead th{font-size:.85em;color:var(--mut)}
+.tbl tr.key td{font-weight:800}
+.effect{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}
+.effect .e{border-radius:12px;padding:12px;background:#f1faf6;border:1px solid #bfe6d6}
+.effect .e .v{font-size:1.9em;font-weight:900;color:var(--kan)}
+.effect .e .v.neu{color:var(--ink)}
+.effect .e .l{font-size:.82em;font-weight:600;color:var(--mut)}
+.qs li{margin:.35em 0}
+
+/* ---------- PLAYER (phone) ---------- */
+.ph{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:10px 12px 14px;font-size:16px}
+.phead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.phead .st{font-weight:800;font-size:1.25em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.phead .tm{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:1.2em}
+.prule{font-size:.88em;padding:8px 10px;border-radius:10px;margin-bottom:8px;color:#fff}
+.prule.push{background:var(--push)}.prule.kanban{background:var(--kan)}
+.pio{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.pio .box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-height:74px}
+.pio .box .l{font-size:.75em;color:var(--mut);font-weight:700}
+.pio .box .v{font-size:1.6em;font-weight:800}
+.mini{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px}
+.mini i{width:10px;height:8px;background:#c49a5a;border:1px solid #8d6a33;border-radius:2px}
+.kc{display:flex;gap:4px;margin-top:4px}
+.kc b{width:18px;height:24px;border-radius:4px;border:2px solid var(--kan)}
+.kc b.u{background:var(--kan)}
+.pmain{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:10px;min-height:280px}
+.bigbtn{width:100%;padding:0;height:min(42vh,260px);font-size:2.6em;font-weight:900;border-radius:22px;background:var(--work);box-shadow:0 6px 0 #1f7a43;letter-spacing:.04em}
+.bigbtn:active{transform:translateY(4px);box-shadow:0 2px 0 #1f7a43}
+.waitbox{border-radius:18px;padding:22px 16px;text-align:center;font-weight:700;font-size:1.15em;line-height:1.4}
+.waitbox.starved{background:#fff3cd;color:#6d5000;border:2px solid var(--starve)}
+.waitbox.blocked{background:#e6efff;color:#1e4a8f;border:2px solid var(--block)}
+.waitbox.info{background:#fff;border:2px solid var(--line)}
+.waitbox .ico{font-size:2.2em;display:block;margin-bottom:6px}
+.task{background:#fff;border:2px solid var(--line);border-radius:18px;padding:8px;text-align:center}
+.task .tt{font-weight:800;margin:4px 0 6px}
+.task svg{width:100%;height:auto;touch-action:manipulation;display:block}
+.task .tg{cursor:pointer}
+.task .tg circle.c{fill:#ffd24d;stroke:#1b2130;stroke-width:3}
+.task .tg.done circle.c{fill:var(--work);stroke:#1f7a43}
+.task .tg.next circle.c{animation:pulse .8s ease-in-out infinite}
+.task .tg text{font-weight:900;font-size:22px;pointer-events:none}
+@keyframes pulse{50%{stroke-width:7}}
+.machine{background:#fff;border:2px solid var(--line);border-radius:18px;padding:18px;text-align:center}
+.machine .pbar{height:26px;border-radius:13px;margin:12px 0}
+.machine .pbar i{border-radius:13px}
+.pfoot{display:flex;justify-content:space-between;font-size:.85em;color:var(--mut);margin-top:8px}
+.plist{display:grid;gap:8px}
+.plist button{text-align:left;background:#fff;color:var(--ink);border:2px solid var(--line);padding:12px}
+.plist button.me{border-color:var(--kan);background:#f1faf6}
+.plist button:disabled{opacity:.5}
+.pk{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pk .box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}
+.pk .box .v{font-size:1.7em;font-weight:800}
+.pk .box .l{font-size:.75em;color:var(--mut);font-weight:700}
+.cdp{font-size:30vw;font-weight:900;text-align:center;line-height:1}
+.shake{animation:shk .25s}
+@keyframes shk{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.warn{background:#fff3cd;border:1px solid #f0d58a;color:#6d5000;border-radius:10px;padding:8px 12px;font-size:.88em}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   Kanban Hat Simülasyonu — İtme (push) vs. Kanban (pull)
+   Tek dosya. Eğitmen ekranı = simülasyonun sahibi (otorite).
+   Telefonlar = istasyon kumandası. Haberleşme: herkese açık MQTT sunucusu.
+   ===================================================================== */
+const TOPIC_ROOT = 'kanbanlab-ytu-v1';
+const BROKERS = [
+  {name:'HiveMQ',    url:'wss://broker.hivemq.com:8884/mqtt'},
+  {name:'EMQX',      url:'wss://broker.emqx.io:8084/mqtt'},
+  {name:'Mosquitto', url:'wss://test.mosquitto.org:8081/mqtt'}
+];
+const LIB = {
+  kesim:  {name:'Kesim',            icon:'✂️', targets:2, mt:0.6, task:'Kesim noktalarına sırayla dokun'},
+  delme:  {name:'Delme',            icon:'🔩', targets:3, mt:1.0, task:'Delik noktalarına sırayla dokun'},
+  kaynak: {name:'Kaynak',           icon:'🔥', targets:3, mt:1.0, task:'Kaynak noktalarına sırayla dokun'},
+  montaj: {name:'Montaj',           icon:'🔧', targets:3, mt:1.0, task:'Vidaları sırayla tak'},
+  kalite: {name:'Kalite Kontrol',   icon:'🔍', targets:3, mt:0.8, task:'Kontrol noktalarını sırayla onayla'},
+  paket:  {name:'Paketleme & Sevk', icon:'📦', targets:2, mt:0.8, task:'Koli bandı noktalarına dokun'}
+};
+const LINES = {
+  4:['kesim','delme','kaynak','paket'],
+  5:['kesim','delme','kaynak','montaj','paket'],
+  6:['kesim','delme','kaynak','montaj','kalite','paket']
+};
+const ROUND_COLORS = ['#d64545','#0f8a6c','#3a66c4','#c98a12','#8a4fc4','#555'];
+const OFFLINE_MS = 12000;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rnd = (a,b) => a + Math.random()*(b-a);
+const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : NaN;
+const fmtClock = ms => { ms = Math.max(0, ms); const s = Math.ceil(ms/1000); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+const fmtSec = x => (x==null || isNaN(x)) ? '—' : Math.round(x) + ' sn';
+const fmt1 = x => (x==null || isNaN(x)) ? '—' : (Math.round(x*10)/10).toLocaleString('tr-TR');
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+};
+function setHTML(el, html){ if(el && el._h !== html){ el.innerHTML = html; el._h = html; } }
+function modeLabel(mode,K){ return mode==='push' ? 'İTME' : 'KANBAN (K=' + K + ')'; }
+
+/* ---------------- Transport (MQTT ya da yerel test) ---------------- */
+function loadScript(src){
+  return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+}
+async function ensureMqtt(){
+  if (window.mqtt) return;
+  for (const u of ['https://unpkg.com/mqtt@5/dist/mqtt.min.js','https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js']){
+    try { await loadScript(u); if (window.mqtt) return; } catch(e){}
+  }
+  throw new Error('MQTT kütüphanesi yüklenemedi (internet?)');
+}
+function createTransport(b, room, subs, onMsg, onStatus){
+  const base = TOPIC_ROOT + '/' + room + '/';
+  if (b === 'L'){ // tek bilgisayarda test: sekmeler arası
+    const ch = new BroadcastChannel('kanbanlab-' + room);
+    ch.onmessage = e => { const d = e.data; if (d && subs.includes(d.sub)) onMsg(d.sub, d.obj); };
+    setTimeout(()=>onStatus('ok','Yerel test kanalı'), 30);
+    return { pub(sub,obj){ ch.postMessage({sub,obj}); }, close(){ ch.close(); } };
+  }
+  const br = BROKERS[+b] || BROKERS[0];
+  let client = null, closed = false;
+  const dec = new TextDecoder();
+  onStatus('wait', br.name + ' sunucusuna bağlanıyor…');
+  ensureMqtt().then(()=>{
+    if (closed) return;
+    client = mqtt.connect(br.url, {clientId:'kl_'+Math.random().toString(36).slice(2,10), clean:true, connectTimeout:8000, reconnectPeriod:2000, keepalive:30});
+    client.on('connect', ()=>{ onStatus('ok','Bağlı (' + br.name + ')'); client.subscribe(subs.map(s=>base+s), {qos:0}); });
+    client.on('reconnect', ()=>onStatus('wait','Yeniden bağlanıyor…'));
+    client.on('offline', ()=>onStatus('err','Bağlantı yok'));
+    client.on('error', e=>onStatus('err','Hata: ' + (e && e.message || e)));
+    client.on('message', (topic, payload)=>{
+      const sub = topic.slice(base.length);
+      try { onMsg(sub, JSON.parse(typeof payload==='string' ? payload : dec.decode(payload))); } catch(e){}
+    });
+  }).catch(e=>onStatus('err', e.message));
+  return {
+    pub(sub,obj,retain){ if (client && client.connected) client.publish(base+sub, JSON.stringify(obj), {qos:0, retain:!!retain}); },
+    close(){ closed = true; if (client) client.end(true); }
+  };
+}
+
+/* ---------------- Grafikler (canvas) ---------------- */
+function setupCanvas(cv){
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(200, r.width), h = Math.max(120, r.height);
+  if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){ cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); }
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  return {ctx,w,h};
+}
+function niceMax(v){ if (!(v>0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1,1.5,2,2.5,3,4,5,6,8,10]) if (m*p >= v) return m*p; return 10*p; }
+function niceStep(max, n){ const raw = max/n; const p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1,2,2.5,5,10]) if (m*p >= raw) return m*p; return 10*p; }
+function lineChart(cv, series, o){
+  if (!cv) return;
+  const {ctx,w,h} = setupCanvas(cv);
+  const L=46, R=10, T=26, B=30;
+  let xm = o.xMax || 1, ym = o.yMin || 1;
+  series.forEach(s=>s.pts.forEach(([x,y])=>{ if (x>xm) xm=x; if (y>ym) ym=y; }));
+  ym = niceMax(ym*1.08);
+  const X = x => L + (x/xm)*(w-L-R), Y = y => h-B - (y/ym)*(h-T-B);
+  ctx.font = '12px system-ui,sans-serif'; ctx.fillStyle = '#667085'; ctx.strokeStyle = '#e8eaee'; ctx.lineWidth = 1;
+  const ys = niceStep(ym,4);
+  for (let v=0; v<=ym+1e-9; v+=ys){ ctx.beginPath(); ctx.moveTo(L,Y(v)); ctx.lineTo(w-R,Y(v)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText(Math.round(v), L-6, Y(v)+4); }
+  const xs = niceStep(xm,6);
+  ctx.textAlign='center';
+  for (let v=0; v<=xm+1e-9; v+=xs){ ctx.fillText(Math.round(v), X(v), h-B+15); }
+  ctx.textAlign='left'; ctx.fillText(o.yLabel||'', 4, 14);
+  ctx.textAlign='right'; ctx.fillText(o.xLabel||'', w-R, h-4);
+  series.forEach(s=>{
+    ctx.strokeStyle = s.color; ctx.fillStyle = s.color; ctx.globalAlpha = s.alpha ?? 1;
+    if (s.dots){
+      s.pts.forEach(([x,y])=>{ ctx.beginPath(); ctx.arc(X(x),Y(y),3.2,0,7); ctx.fill(); });
+    } else {
+      ctx.lineWidth = s.width || 2.5; ctx.beginPath();
+      s.pts.forEach(([x,y],i)=>{ i ? ctx.lineTo(X(x),Y(y)) : ctx.moveTo(X(x),Y(y)); }); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  });
+  drawLegend(ctx, series, w-R);
+}
+function drawLegend(ctx, series, right){
+  ctx.font = '600 12px system-ui,sans-serif'; ctx.textAlign = 'left';
+  const items = series.filter(s=>s.name);
+  const total = items.reduce((a,s)=>a + ctx.measureText(s.name).width + 30, 0);
+  let lx = right - total;
+  items.forEach(s=>{ ctx.fillStyle=s.color; ctx.globalAlpha = s.alpha ?? 1; ctx.fillRect(lx, 7, 12, 9); ctx.globalAlpha = 1; ctx.fillStyle='#1b2130'; ctx.fillText(s.name, lx+16, 16); lx += ctx.measureText(s.name).width + 30; });
+}
+function barChart(cv, cats, series, o){
+  if (!cv) return;
+  const {ctx,w,h} = setupCanvas(cv);
+  const L=40, R=8, T=26, B=34, ym = o.yMax || 100;
+  const Y = y => h-B - (y/ym)*(h-T-B);
+  ctx.font='12px system-ui,sans-serif'; ctx.fillStyle='#667085'; ctx.strokeStyle='#e8eaee';
+  for (let v=0; v<=ym; v+=ym/4){ ctx.beginPath(); ctx.moveTo(L,Y(v)); ctx.lineTo(w-R,Y(v)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText(Math.round(v)+(o.unit||''), L-5, Y(v)+4); }
+  const gw = (w-L-R)/cats.length, bw = Math.min(26, (gw-10)/Math.max(1,series.length));
+  cats.forEach((c,i)=>{
+    const gx = L + i*gw + (gw - bw*series.length)/2;
+    series.forEach((s,k)=>{ const v = s.vals[i]||0; ctx.fillStyle=s.color; ctx.fillRect(gx+k*bw, Y(v), bw-2, h-B-Y(v)); });
+    ctx.fillStyle='#1b2130'; ctx.textAlign='center'; ctx.fillText(c.length>12? c.slice(0,11)+'…' : c, L+i*gw+gw/2, h-B+15);
+  });
+  drawLegend(ctx, series, w-R);
+}
+
+/* ---------------- Yönlendirme ---------------- */
+const P = new URLSearchParams(location.search);
+
+function renderLanding(){
+  $('#app').innerHTML = `
+  <div class="landing">
+    <h1>🏭 Kanban Hat Simülasyonu</h1>
+    <p class="mut">İtme (push) ve Kanban (pull) üretim sistemlerinin karşılaştırıldığı, telefonla oynanan sınıf içi uygulama.</p>
+    <div class="grid">
+      <div class="card">
+        <h2>👩‍🏫 Eğitmen ekranı</h2>
+        <p class="mut small">Projeksiyona yansıtılacak ekran. Oyunu yönetir, QR kodunu ve sonuçları gösterir.</p>
+        <label class="small mut">Bağlantı sunucusu<br>
+          <select id="lb">${BROKERS.map((b,i)=>`<option value="${i}">${i+1}. ${b.name}</option>`).join('')}<option value="L">Tek bilgisayarda test (sekmeler)</option></select>
+        </label>
+        <p><button id="goHost">Eğitmen ekranını aç</button></p>
+      </div>
+      <div class="card">
+        <h2>📱 Katılımcı</h2>
+        <p class="mut small">Normalde QR kodunu okutmanız yeterli. Elle katılmak için oda kodunu girin.</p>
+        <input id="lc" placeholder="Oda kodu (örn. K7QX)" maxlength="6" style="text-transform:uppercase;width:100%">
+        <p><button id="goPlay" class="green">Katıl</button></p>
+      </div>
+    </div>
+  </div>`;
+  $('#goHost').onclick = ()=>{ location.search = '?rol=egitmen' + ($('#lb').value!=='0' ? '&b='+$('#lb').value : ''); };
+  $('#goPlay').onclick = ()=>{ const c = $('#lc').value.trim().toUpperCase(); if (c) location.search = '?oda=' + encodeURIComponent(c) + ($('#lb').value!=='0' ? '&b='+$('#lb').value : ''); };
+}
+
+/* =====================================================================
+   EĞİTMEN (HOST) — simülasyonun sahibi
+   ===================================================================== */
+let H;
+function genCode(){ const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
+function startHost(b){
+  let code = (P.get('kod') || '').toUpperCase();
+  if (!code){ try { code = sessionStorage.getItem('kl_host_code') || ''; } catch(e){} }
+  if (!code) code = genCode();
+  try { sessionStorage.setItem('kl_host_code', code); } catch(e){}
+  H = {
+    b, code, players:{}, assign:[null,null,null,null,null,null], forceBot:[false,false,false,false,false,false],
+    settings:{n:5, bott:2, bt:7, round:240, K:1, mode:'push'},
+    phase:'lobby', sim:null, rounds:[], cdEnd:0, conn:{s:'wait',m:'…'}, lastPub:0, dirty:true, lastTick:Date.now(), view:''
+  };
+  H.tr = createTransport(b, code, ['act'], hostOnMsg, (s,m)=>{ H.conn={s,m}; H.dirty=true; });
+  setInterval(hostTick, 100);
+  setInterval(hostRender, 250);
+  window.addEventListener('resize', ()=>{ H.view=''; });
+  window.addEventListener('beforeunload', e=>{ if (H.rounds.length || H.phase==='run'){ e.preventDefault(); e.returnValue=''; } });
+  hostRender();
+}
+const now = () => Date.now();
+function lineKeys(n){ return LINES[n || (H.sim ? H.sim.n : H.settings.n)]; }
+function isOnline(pid){ const p = H.players[pid]; return p && (now() - p.last) < OFFLINE_MS; }
+function isBot(j){ const pid = H.assign[j]; return H.forceBot[j] || !pid || !isOnline(pid); }
+function normalizeAssign(){
+  const n = H.settings.n;
+  for (let j=n; j<6; j++){ const pid = H.assign[j]; if (pid){ H.assign[j]=null; if (H.players[pid]) H.players[pid].st=null; } }
+  Object.values(H.players).forEach(p=>{ if (p.st==null) autoAssign(p); });
+}
+function autoAssign(p){
+  const n = H.settings.n;
+  for (let j=0;j<n;j++){ if (!H.assign[j]){ H.assign[j]=p.pid; p.st=j; return; } }
+  p.st = null; // gözlemci
+}
+function hostOnMsg(sub, m){
+  if (sub !== 'act' || !m || !m.pid) return;
+  let p = H.players[m.pid];
+  if (!p){
+    if (m.t !== 'hb') return;
+    p = H.players[m.pid] = {pid:m.pid, name:String(m.name||'Oyuncu').slice(0,18), last:now(), st:null};
+    if (H.phase !== 'run' && H.phase !== 'cd') autoAssign(p);
+    H.dirty = true;
+  }
+  p.last = now();
+  if (m.name && m.name !== p.name){ p.name = String(m.name).slice(0,18); H.dirty = true; }
+  const S = H.sim;
+  switch (m.t){
+    case 'claim': {
+      if (H.phase==='run' || H.phase==='cd') break;
+      const j = m.st;
+      if (j === -1){ if (p.st!=null){ H.assign[p.st]=null; p.st=null; } H.dirty=true; break; }
+      if (!(j>=0 && j<H.settings.n)) break;
+      const cur = H.assign[j];
+      if (cur && cur!==p.pid && isOnline(cur)) break;
+      if (cur && cur!==p.pid && H.players[cur]) H.players[cur].st = null;
+      if (p.st!=null) H.assign[p.st] = null;
+      H.assign[j] = p.pid; p.st = j; H.dirty = true; break;
+    }
+    case 'start': {
+      if (H.phase!=='run' || !S) break;
+      const j = p.st; if (j==null || j!==m.st || H.forceBot[j]) break;
+      if (canStart(S,j)) { simStart(S,j,now()); H.dirty=true; }
+      break;
+    }
+    case 'done': {
+      if (H.phase!=='run' || !S) break;
+      const j = p.st; if (j==null || j!==m.st) break;
+      if (simDone(S,j,m.u,now())) H.dirty=true;
+      break;
+    }
+  }
+}
+
+/* ---------------- Simülasyon çekirdeği ---------------- */
+function newSim(){
+  const s = H.settings, keys = LINES[s.n];
+  return {
+    mode:s.mode, K:s.K, n:s.n, bott:s.bott, bt:s.bt, dur:s.round*1000, keys,
+    st: keys.map((k,j)=>({key:k, mt:(j===s.bott ? s.bt : LIB[k].mt), targets:LIB[k].targets, job:null, busy:0, count:0, botAt:0, starvedMs:0, blockedMs:0})),
+    buf: keys.map(()=>[]), nextId:1, released:0, shipped:[], wipS:[], t0:0, end:0, lastSample:0, lastT:0
+  };
+}
+function canStart(S,j){
+  const st = S.st[j];
+  if (st.job) return false;
+  if (j>0 && S.buf[j-1].length===0) return false;
+  if (S.mode==='kanban' && j<S.n-1 && S.buf[j].length >= S.K) return false;
+  return true;
+}
+function stStatus(S,j){
+  const st = S.st[j];
+  if (st.job) return st.job.ph==='m' ? 'manual' : 'machine';
+  if (j>0 && S.buf[j-1].length===0) return 'starved';
+  if (S.mode==='kanban' && j<S.n-1 && S.buf[j].length >= S.K) return 'blocked';
+  return 'ready';
+}
+function simStart(S,j,t){
+  const unit = j===0 ? {id:S.nextId++, rel:t} : S.buf[j-1].shift();
+  if (j===0) S.released++;
+  S.st[j].job = {u:unit, ph:'m', t, e:0, d:0, bm:0};
+}
+function simDone(S,j,uid,t){
+  const job = S.st[j].job;
+  if (!job || job.ph!=='m') return false;
+  if (uid!=null && uid!==job.u.id) return false;
+  job.ph='x'; job.d = S.st[j].mt * rnd(0.9,1.1) * 1000; job.e = t + job.d;
+  return true;
+}
+function hostTick(){
+  const t = now();
+  if (H.phase==='cd' && t >= H.cdEnd){
+    const S = H.sim; S.t0 = t; S.end = t + S.dur; S.lastT = t; S.lastSample = t; S.wipS.push([0,0]);
+    H.phase='run'; H.dirty=true;
+  }
+  if (H.phase==='run'){
+    const S = H.sim, te = Math.min(t, S.end), dt = te - S.lastT;
+    // durum süreleri
+    for (let j=0;j<S.n;j++){ const ss = stStatus(S,j); if (ss==='starved') S.st[j].starvedMs += dt; else if (ss==='blocked') S.st[j].blockedMs += dt; }
+    S.lastT = te;
+    // tamamlanan makine işleri
+    let changed = false;
+    for (let j=0;j<S.n;j++){
+      const st = S.st[j], job = st.job;
+      if (job && job.ph==='x' && te >= job.e){
+        st.busy += job.e - job.t; st.count++;
+        if (j===S.n-1) S.shipped.push({id:job.u.id, rel:job.u.rel, ship:job.e, lt:job.e - job.u.rel});
+        else S.buf[j].push(job.u);
+        st.job = null; changed = true;
+      }
+    }
+    // botlar
+    if (te < S.end){
+      for (let j=0;j<S.n;j++){
+        if (!isBot(j)) { S.st[j].botAt = 0; continue; }
+        const st = S.st[j];
+        if (!st.job){
+          if (canStart(S,j)){
+            if (!st.botAt) st.botAt = t + rnd(250,700);
+            else if (t >= st.botAt){ simStart(S,j,t); st.botAt = 0; changed = true; }
+          } else st.botAt = 0;
+        }
+        if (st.job && st.job.ph==='m'){
+          if (!st.job.bm) st.job.bm = t + st.targets*rnd(650,950);
+          if (t >= st.job.bm){ simDone(S,j,null,t); changed = true; }
+        }
+      }
+    }
+    if (te - S.lastSample >= 1000){ S.lastSample = te; S.wipS.push([(te-S.t0)/1000, S.released - S.shipped.length]); }
+    if (changed) H.dirty = true;
+    if (t >= S.end) finishRound();
+  }
+  // yayın
+  const running = H.phase==='run' || H.phase==='cd';
+  if ((H.dirty && t - H.lastPub >= 150) || t - H.lastPub >= (running ? 450 : 1200)){
+    H.lastPub = t; H.dirty = false;
+    try { H.tr.pub('state', hostState(), true); } catch(e){}
+  }
+}
+function finishRound(){
+  const S = H.sim, T = S.dur/1000;
+  S.st.forEach(st=>{ if (st.job){ st.busy += Math.max(0, S.end - st.job.t); } });
+  const sh = S.shipped, lts = sh.map(x=>x.lt/1000);
+  const avgWip = mean(S.wipS.map(x=>x[1]));
+  const th = sh.length / (T/60);
+  const last5 = mean(lts.slice(-5));
+  const stats = {
+    idx:H.rounds.length+1, mode:S.mode, K:S.K, n:S.n, bott:S.bott, bt:S.bt, T,
+    names:S.keys.map(k=>LIB[k].name),
+    shipped:sh.length, released:S.released, endWip:S.released - sh.length, avgWip, th,
+    avgLT:mean(lts), last5, maxLT:lts.length? Math.max(...lts):NaN,
+    little: th>0 ? avgWip/(th/60) : NaN,
+    util:S.st.map(st=>Math.min(100, st.busy/S.dur*100)),
+    starved:S.st.map(st=>st.starvedMs/S.dur*100), blocked:S.st.map(st=>st.blockedMs/S.dur*100),
+    wipS:S.wipS.slice(), ltS:sh.map(x=>[(x.ship-S.t0)/1000, x.lt/1000])
+  };
+  stats.label = 'Tur ' + stats.idx + ': ' + (S.mode==='push' ? 'İtme' : 'Kanban K=' + S.K);
+  H.rounds.push(stats);
+  H.phase = 'res'; H.dirty = true;
+  if (S.mode==='push') H.settings.mode = 'kanban';
+}
+function hostStartRound(){
+  normalizeAssign();
+  H.sim = newSim(); H.phase='cd'; H.cdEnd = now()+3000; H.dirty = true;
+}
+function hostState(){
+  const t = now(), S = H.sim, live = (H.phase==='run' || H.phase==='cd') && S;
+  const n = live ? S.n : H.settings.n, keys = LINES[n];
+  const o = {v:1, now:t, ph:H.phase, n, keys, mode: live ? S.mode : H.settings.mode, K: live ? S.K : H.settings.K, bott: live ? S.bott : H.settings.bott,
+    rem: H.phase==='run' ? S.end - t : H.phase==='cd' ? H.cdEnd - t : 0, rd: H.rounds.length + (live ? 1 : 0)};
+  o.as = keys.map((k,j)=>{
+    const pid = H.assign[j], p = pid && H.players[pid], st = live ? S.st[j] : null;
+    return {p:pid||null, pn:p ? p.name : '', bot:isBot(j), fb:H.forceBot[j],
+      j: st && st.job ? {ph:st.job.ph, u:st.job.u.id, e:st.job.e, d:st.job.d} : null,
+      c: st ? st.count : 0, mt: j===o.bott ? (live ? S.bt : H.settings.bt) : LIB[k].mt};
+  });
+  o.b = live ? S.buf.map(x=>x.length) : keys.map(()=>0);
+  if (live){
+    const lts = S.shipped.map(x=>x.lt/1000);
+    o.k = {sh:S.shipped.length, wip:S.released - S.shipped.length, lt:Math.round(mean(lts))||0, l5:Math.round(mean(lts.slice(-5)))||0};
+  }
+  o.r = H.rounds.map(r=>[r.label, r.shipped, Math.round(r.avgWip*10)/10, Math.round(r.avgLT)||0, Math.round(r.last5)||0]);
+  return o;
+}
+
+/* ---------------- Eğitmen ekranı çizimi ---------------- */
+function joinURL(){
+  const base = location.origin + location.pathname;
+  return base + '?oda=' + H.code + (H.b !== '0' ? '&b=' + H.b : '');
+}
+function hostRender(){
+  const ph = H.phase === 'cd' ? 'run' : H.phase;
+  if (H.view !== ph){
+    H.view = ph;
+    if (ph==='lobby') hostBuildLobby();
+    else if (ph==='run') hostBuildLive();
+    else hostBuildResults();
+  }
+  const conn = $('#conn'); if (conn) setHTML(conn, `<span class="chip ${H.conn.s}">● ${esc(H.conn.m)}</span>`);
+  if (ph==='lobby' || ph==='res'){ hostUpdateSlots(); }
+  if (ph==='run') hostUpdateLive();
+}
+function topBar(extra){
+  return `<div class="htop">
+    <div class="title">🏭 Kanban Hat Simülasyonu</div>
+    <span class="chip">Oda: <span class="code">${H.code}</span></span>
+    <span id="conn"></span>
+    <div class="spacer"></div>${extra||''}
+  </div>`;
+}
+function settingsHTML(){
+  const s = H.settings, keys = LINES[s.n];
+  return `<div class="settings">
+    <label>Sonraki tur modu
+      <select data-set="mode"><option value="push" ${s.mode==='push'?'selected':''}>İtme (push)</option><option value="kanban" ${s.mode==='kanban'?'selected':''}>Kanban (pull)</option></select></label>
+    <label>Kanban kart sayısı (K)
+      <select data-set="K">${[1,2,3,4].map(v=>`<option ${s.K===v?'selected':''}>${v}</option>`).join('')}</select></label>
+    <label>Tur süresi
+      <select data-set="round">${[120,180,240,300].map(v=>`<option value="${v}" ${s.round===v?'selected':''}>${v/60} dakika</option>`).join('')}</select></label>
+    <label>İstasyon sayısı
+      <select data-set="n">${[4,5,6].map(v=>`<option ${s.n===v?'selected':''}>${v}</option>`).join('')}</select></label>
+    <label>Darboğaz istasyonu
+      <select data-set="bott">${keys.map((k,j)=>`<option value="${j}" ${s.bott===j?'selected':''}>${j+1}. ${LIB[k].name}</option>`).join('')}</select></label>
+    <label>Darboğaz makine süresi
+      <select data-set="bt">${[5,6,7,8,9,10].map(v=>`<option value="${v}" ${s.bt===v?'selected':''}>${v} sn</option>`).join('')}</select></label>
+  </div>`;
+}
+function bindSettings(root){
+  root.querySelectorAll('[data-set]').forEach(el=>{
+    el.onchange = ()=>{
+      const k = el.dataset.set, v = el.value;
+      H.settings[k] = (k==='mode') ? v : +v;
+      if (k==='n'){ if (H.settings.bott >= H.settings.n) H.settings.bott = 2; normalizeAssign(); H.view=''; }
+      H.dirty = true;
+      const sb = $('#startBtn'); if (sb) sb.textContent = startLabel();
+    };
+  });
+}
+function startLabel(){ return '▶ Tur ' + (H.rounds.length+1) + ' başlat — ' + modeLabel(H.settings.mode, H.settings.K); }
+function slotsBlock(){
+  return `<div class="card" style="margin-top:12px">
+    <div class="row" style="justify-content:space-between"><h3 style="margin:0">İstasyonlar ve operatörler</h3>
+      <label class="small mut"><input type="checkbox" id="allBot" ${H.forceBot.slice(0,H.settings.n).every(x=>x)?'checked':''}> Tüm istasyonları bot oynasın (yedek / demo)</label></div>
+    <p class="small mut" style="margin:.3em 0 .6em">Boş istasyonları otomatik olarak bot oynar. Fazla katılımcılar gözlemci olur ve canlı göstergeleri telefonundan izler.</p>
+    <div class="slots" id="slots"></div>
+    <div id="obs" class="small mut" style="margin-top:8px"></div>
+  </div>`;
+}
+function bindSlots(){
+  const sl = $('#slots');
+  sl.addEventListener('click', e=>{
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const j = +b.dataset.j;
+    if (b.dataset.a==='bot'){ H.forceBot[j] = !H.forceBot[j]; }
+    if (b.dataset.a==='kick'){ const pid = H.assign[j]; if (pid && H.players[pid]) H.players[pid].st = null; H.assign[j] = null; }
+    H.dirty = true; hostUpdateSlots();
+  });
+  $('#allBot').onchange = e=>{ for (let j=0;j<6;j++) H.forceBot[j] = e.target.checked; H.dirty=true; hostUpdateSlots(); };
+}
+function hostUpdateSlots(){
+  const sl = $('#slots'); if (!sl) return;
+  const keys = LINES[H.settings.n];
+  setHTML(sl, keys.map((k,j)=>{
+    const pid = H.assign[j], p = pid && H.players[pid], on = pid && isOnline(pid), fb = H.forceBot[j];
+    const who = fb ? '🤖 Bot (zorunlu)' + (p ? ` <span class="mut">— ${esc(p.name)} bekliyor</span>` : '')
+      : p ? (on ? '👤 ' + esc(p.name) : '⚠️ ' + esc(p.name) + ' <span class="mut">(bağlantı yok → bot)</span>') : '<span class="mut">Boş → bot oynar</span>';
+    return `<div class="slot ${p&&!fb?'has':''} ${fb||!p?'bot':''}">
+      <div class="nm">${j+1}. ${LIB[k].icon} ${esc(LIB[k].name)} ${j===H.settings.bott?'<span class="bn">DARBOĞAZ</span>':''}</div>
+      <div class="who">${who}</div>
+      <div class="small mut">Makine süresi: ${j===H.settings.bott?H.settings.bt:LIB[k].mt} sn · ${LIB[k].targets} dokunuş</div>
+      <div class="acts" style="margin-top:6px"><button class="ghost" data-a="bot" data-j="${j}">${fb?'Botu kaldır':'Bot yap'}</button>${p?`<button class="ghost" data-a="kick" data-j="${j}">Çıkar</button>`:''}</div>
+    </div>`;
+  }).join(''));
+  const obs = Object.values(H.players).filter(p=>p.st==null && isOnline(p.pid));
+  setHTML($('#obs'), obs.length ? '👀 Gözlemciler: ' + obs.map(p=>esc(p.name)).join(', ') : '');
+  const ab = $('#allBot'); if (ab) ab.checked = H.forceBot.slice(0,H.settings.n).every(x=>x);
+}
+function hostBuildLobby(){
+  const url = joinURL();
+  const isFile = location.protocol === 'file:';
+  $('#app').innerHTML = `<div class="host">${topBar()}
+    <div class="lobby">
+      <div class="card qrbox">
+        <h3>📱 Telefonla katılın</h3>
+        <div id="qr"></div>
+        <div class="bigcode code">${H.code}</div>
+        <div class="small mut" style="word-break:break-all">${esc(url)}</div>
+        ${isFile?'<p class="warn">Bu sayfa bilgisayardan dosya olarak açılmış. Telefonların bağlanabilmesi için sayfayı yayınladığınız internet adresinden (ör. GitHub Pages) açın.</p>':''}
+      </div>
+      <div>
+        <div class="card">
+          <h3>Oyunun kuralları (öğrencilere okuyun)</h3>
+          <ol class="rules">
+            <li>Her telefon hattaki bir istasyondur. <b>İŞLE</b> tuşuna basınca önceki istasyondan bir parça alırsınız.</li>
+            <li>Parçanın üzerindeki numaralı noktalara <b>sırayla</b> dokunun; ardından makine kendi süresinde işler ve parça otomatik olarak sonraki istasyona gider.</li>
+            <li><b>Kaynak</b> istasyonunun makinesi daha yavaştır (darboğaz).</li>
+            <li><span class="badge push">İTME</span> turunda kural: <b>girdi varsa hemen işle, boş durma.</b></li>
+            <li><span class="badge kanban">KANBAN</span> turunda kural: <b>yalnızca boş kanban kartın varsa üret.</b> Sonraki istasyon parçanı çekince kartın geri gelir.</li>
+            <li>Amaç her iki turda da müşteriye mümkün olduğunca çok ürün sevk etmek.</li>
+          </ol>
+        </div>
+        ${slotsBlock()}
+        <div class="card" style="margin-top:12px">
+          <h3>Ayarlar</h3>${settingsHTML()}
+          <p style="margin-top:14px"><button id="startBtn" class="green" style="font-size:1.15em">${startLabel()}</button></p>
+          <p class="small mut">Önerilen akış: Tur 1 İtme → Tur 2 Kanban (K=1). İsterseniz Tur 3'te K=3 ile kart sayısının etkisini gösterebilirsiniz.</p>
+        </div>
+      </div>
+    </div></div>`;
+  if (window.QRCode){ try { new QRCode($('#qr'), {text:url, width:230, height:230, correctLevel:QRCode.CorrectLevel.M}); } catch(e){} }
+  else $('#qr').innerHTML = '<div class="small mut" style="padding:40px 10px">QR kütüphanesi yüklenemedi.<br>Adresi ya da oda kodunu kullanın.</div>';
+  bindSettings($('#app')); bindSlots();
+  $('#startBtn').onclick = hostStartRound;
+}
+function hostBuildLive(){
+  $('#app').innerHTML = `<div class="host">${topBar(`<span id="modeB"></span><span class="kpi" style="padding:4px 14px"><span class="l">Kalan süre</span> <span id="tleft" class="code" style="font-size:1.6em;font-weight:800"></span></span><button class="ghost" id="stopBtn">Turu bitir</button>`)}
+    <div class="kpis">
+      <div class="kpi"><div class="l">Sevk edilen ürün</div><div class="v" id="kSh">0</div><div class="s" id="kTh"></div></div>
+      <div class="kpi"><div class="l">Yarı mamul stok (WIP)</div><div class="v" id="kWip">0</div><div class="s">hatta bekleyen + işlenen</div></div>
+      <div class="kpi"><div class="l">Hatta başlatılan</div><div class="v" id="kRel">0</div><div class="s">hammadde çıkışı</div></div>
+      <div class="kpi"><div class="l">Ort. çevrim süresi</div><div class="v" id="kLt">—</div><div class="s">giriş → sevk</div></div>
+      <div class="kpi"><div class="l">Son 5 parçanın çevrim süresi</div><div class="v" id="kL5">—</div><div class="s">güncel durum</div></div>
+    </div>
+    <div class="line" id="line"></div>
+    <div class="charts2">
+      <div class="chartcard"><h3>Yarı mamul stok – zaman</h3><canvas id="cW"></canvas></div>
+      <div class="chartcard"><h3>Her ürünün çevrim süresi (sevk anına göre)</h3><canvas id="cL"></canvas></div>
+    </div>
+    <div class="cd" id="cd" style="display:none"><div style="font-size:4vh;font-weight:700" id="cdMode"></div><div class="n" id="cdN">3</div></div>
+  </div>`;
+  $('#stopBtn').onclick = ()=>{ if (H.phase==='run'){ const t = now(); H.sim.end = t; H.sim.dur = Math.max(1000, t - H.sim.t0); } };
+  $('#line').addEventListener('pointerdown', e=>{
+    const c = e.target.closest('.stc'); if (!c) return;
+    const j = +c.dataset.j; H.forceBot[j] = !H.forceBot[j]; H.dirty = true;
+  });
+  H.lastChart = 0;
+}
+function hostUpdateLive(){
+  const S = H.sim, t = now(); if (!S) return;
+  const cd = $('#cd');
+  if (H.phase==='cd'){ cd.style.display='flex'; $('#cdN').textContent = Math.max(1, Math.ceil((H.cdEnd - t)/1000)); $('#cdMode').innerHTML = `Tur ${H.rounds.length+1} — <span class="badge ${S.mode}">${modeLabel(S.mode,S.K)}</span>`; }
+  else cd.style.display='none';
+  setHTML($('#modeB'), `<span class="badge ${S.mode}" style="font-size:1.1em">Tur ${H.rounds.length+1} · ${modeLabel(S.mode,S.K)}</span>`);
+  $('#tleft').textContent = H.phase==='run' ? fmtClock(S.end - t) : fmtClock(S.dur);
+  const el = H.phase==='run' ? (t - S.t0)/1000 : 0;
+  const lts = S.shipped.map(x=>x.lt/1000);
+  $('#kSh').textContent = S.shipped.length;
+  $('#kTh').textContent = el>20 ? fmt1(S.shipped.length/(el/60)) + ' adet/dk' : '';
+  $('#kWip').textContent = S.released - S.shipped.length;
+  $('#kRel').textContent = S.released;
+  $('#kLt').textContent = lts.length ? Math.round(mean(lts)) + ' sn' : '—';
+  $('#kL5').textContent = lts.length ? Math.round(mean(lts.slice(-5))) + ' sn' : '—';
+  // hat diyagramı
+  let h = `<div class="endcap"><div style="font-size:1.8em">🏗️</div>Hammadde<div class="mut small">sınırsız</div></div><div class="buf"><div class="ar">→</div></div>`;
+  for (let j=0;j<S.n;j++){
+    const st = S.st[j], ss = stStatus(S,j), pid = H.assign[j], p = pid && H.players[pid];
+    const cls = (ss==='manual'||ss==='machine') ? 's-work' : ss==='starved' ? 's-starved' : ss==='blocked' ? 's-blocked' : '';
+    const stt = {manual:'✋ Operatör işliyor', machine:'⚙️ Makine çalışıyor', starved:'⏳ Girdi bekliyor (aç)', blocked:'🟦 Kart bekliyor (bloke)', ready:'● Hazır'}[ss];
+    let pw = 0, pcls = '';
+    if (st.job){ if (st.job.ph==='m') pcls='manual'; else pw = Math.min(100, (t - (st.job.e - st.job.d))/st.job.d*100); }
+    const op = isBot(j) ? '🤖 Bot' : '👤 ' + esc(p ? p.name : '');
+    let cards = '';
+    if (S.mode==='kanban' && j<S.n-1){
+      const used = S.buf[j].length + (st.job?1:0);
+      cards = `<div class="cards">Kart:${Array.from({length:S.K},(_,i)=>`<b class="${i<used?'u':''}"></b>`).join('')}</div>`;
+    }
+    h += `<div class="stc ${cls}" data-j="${j}" title="Tıkla: bot aç/kapat">
+      <div class="sth">${LIB[st.key].icon} ${esc(LIB[st.key].name)} ${j===S.bott?'<span class="bn">DARBOĞAZ</span>':''}</div>
+      <div class="op">${op} · ${st.mt} sn</div>
+      <div class="pbar ${pcls}"><i style="width:${pw}%"></i></div>
+      <div class="stt">${stt}</div><div class="cnt">İşlenen: ${st.count}</div>${cards}</div>`;
+    if (j<S.n-1){
+      const q = S.buf[j].length, show = Math.min(q, 40);
+      h += `<div class="buf"><div class="n ${q>=6?'hot':''}">${q}</div><div class="stack">${'<i></i>'.repeat(show)}</div>${q>40?'<div class="small mut">+'+(q-40)+'</div>':''}<div class="ar">→</div></div>`;
+    }
+  }
+  h += `<div class="buf"><div class="ar">→</div></div><div class="endcap"><div style="font-size:1.8em">🚚</div>Müşteri<div class="big">${S.shipped.length}</div></div>`;
+  setHTML($('#line'), h);
+  // grafikler (saniyede bir)
+  if (t - (H.lastChart||0) > 1000){
+    H.lastChart = t;
+    const xMax = S.dur/1000;
+    const wS = H.rounds.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], alpha:.35, pts:r.wipS, width:2}));
+    wS.push({name:'Şu an', color:ROUND_COLORS[H.rounds.length%6], pts:S.wipS, width:3.5});
+    lineChart($('#cW'), wS, {xMax, xLabel:'zaman (sn)', yLabel:'adet'});
+    const lS = H.rounds.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], alpha:.3, pts:r.ltS, dots:true}));
+    lS.push({name:'Şu an', color:ROUND_COLORS[H.rounds.length%6], pts:S.shipped.map(x=>[(x.ship-S.t0)/1000, x.lt/1000]), dots:true});
+    lineChart($('#cL'), lS, {xMax, xLabel:'sevk anı (sn)', yLabel:'çevrim süresi (sn)'});
+  }
+}
+function pct(a,b){ return (a-b)/b*100; }
+function hostBuildResults(){
+  const R = H.rounds;
+  const lastPush = [...R].reverse().find(r=>r.mode==='push'), lastKan = [...R].reverse().find(r=>r.mode==='kanban');
+  let eff = '';
+  if (lastPush && lastKan){
+    const d = (v,inv)=>{ const x = pct(v[1],v[0]); return (x>0?'+':'') + Math.round(x) + '%'; };
+    eff = `<div class="card" style="margin-bottom:12px"><h3>Kanban etkisi: ${esc(lastPush.label)} → ${esc(lastKan.label)}</h3>
+      <div class="effect">
+        <div class="e"><div class="l">Sevk edilen ürün</div><div class="v neu">${lastPush.shipped} → ${lastKan.shipped}</div><div class="small mut">${d([lastPush.shipped,lastKan.shipped])} (çıktıyı darboğaz belirler)</div></div>
+        <div class="e"><div class="l">Ortalama yarı mamul stok</div><div class="v">${fmt1(lastPush.avgWip)} → ${fmt1(lastKan.avgWip)}</div><div class="small mut">${d([lastPush.avgWip,lastKan.avgWip])}</div></div>
+        <div class="e"><div class="l">Tur sonu yarı mamul</div><div class="v">${lastPush.endWip} → ${lastKan.endWip}</div><div class="small mut">${d([lastPush.endWip,lastKan.endWip])}</div></div>
+        <div class="e"><div class="l">Son 5 ürünün çevrim süresi</div><div class="v">${Math.round(lastPush.last5)} → ${Math.round(lastKan.last5)} sn</div><div class="small mut">${d([lastPush.last5,lastKan.last5])}</div></div>
+      </div></div>`;
+  }
+  const rows = [
+    ['Sevk edilen ürün (adet)', r=>r.shipped, true],
+    ['Çıktı hızı (adet/dk)', r=>fmt1(r.th)],
+    ['Hatta başlatılan parça (adet)', r=>r.released],
+    ['Tur sonu yarı mamul stok (adet)', r=>r.endWip, true],
+    ['Ortalama yarı mamul stok (adet)', r=>fmt1(r.avgWip), true],
+    ['Ortalama çevrim süresi (sn)', r=>fmtSec(r.avgLT)],
+    ['Son 5 ürünün çevrim süresi (sn)', r=>fmtSec(r.last5), true],
+    ['En uzun çevrim süresi (sn)', r=>fmtSec(r.maxLT)],
+    ['Little Yasası ile çevrim süresi = Ort. WIP ÷ çıktı hızı (sn)', r=>fmtSec(r.little)],
+    ['Darboğaz kullanım oranı (%)', r=>Math.round(r.util[r.bott])+'%'],
+    ['Diğer istasyonların ort. kullanım oranı (%)', r=>Math.round(mean(r.util.filter((_,i)=>i!==r.bott)))+'%']
+  ];
+  $('#app').innerHTML = `<div class="host">${topBar('<button class="ghost" id="resetBtn">Sonuçları sıfırla</button>')}
+    ${eff}
+    <div class="card" style="margin-bottom:12px;overflow-x:auto">
+      <table class="tbl"><thead><tr><th>Gösterge</th>${R.map((r,i)=>`<th style="color:${ROUND_COLORS[i%6]}">${esc(r.label)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(([l,f,key])=>`<tr class="${key?'key':''}"><td>${l}</td>${R.map(r=>`<td>${f(r)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    </div>
+    <div class="charts3">
+      <div class="chartcard"><h3>Yarı mamul stok – zaman</h3><canvas id="rW"></canvas></div>
+      <div class="chartcard"><h3>Her ürünün çevrim süresi</h3><canvas id="rL"></canvas></div>
+      <div class="chartcard"><h3>İstasyon kullanım oranları (%)</h3><canvas id="rU"></canvas></div>
+    </div>
+    <div class="lobby" style="margin-top:12px;grid-template-columns:1fr 1fr">
+      <div class="card"><h3>Tartışma soruları</h3>
+        <ol class="qs">
+          <li>Sevk edilen ürün sayısı iki turda neden hemen hemen aynı? Hattın çıktısını ne belirliyor?</li>
+          <li>İtme turunda stok <b>nerede</b> birikti? Bu stok müşteriye bir değer kattı mı?</li>
+          <li>Kanban turunda Kesim ve Delme istasyonları sık sık boş bekledi. Bu bir kayıp mı, yoksa doğru davranış mı? (Yerel verimlilik ↔ sistem verimliliği)</li>
+          <li><b>Little Yasası:</b> WIP = Çıktı hızı × Çevrim süresi. Tablodaki değerler bunu doğruluyor mu? İtme turunda neden sapma var? (Sistem kararlı değil, stok büyümeye devam ediyor.)</li>
+          <li>Kart sayısını (K) artırırsak ya da azaltırsak ne olur? Darboğazın önündeki kart sayısı neden kritik?</li>
+          <li>Gerçek bir fabrikada (ör. beyaz eşya montaj hattı) bu tablo stok maliyeti, kalite ve teslim süresi açısından ne anlama gelir?</li>
+        </ol></div>
+      <div>
+        ${slotsBlock()}
+        <div class="card" style="margin-top:12px"><h3>Sonraki tur</h3>${settingsHTML()}
+          <p style="margin-top:14px"><button id="startBtn" class="green" style="font-size:1.15em">${startLabel()}</button></p></div>
+      </div>
+    </div></div>`;
+  bindSettings($('#app')); bindSlots();
+  $('#startBtn').onclick = hostStartRound;
+  $('#resetBtn').onclick = ()=>{ if (H._rc && now()-H._rc<3000){ H.rounds=[]; H.settings.mode='push'; H.phase='lobby'; H.view=''; H.dirty=true; } else { H._rc = now(); $('#resetBtn').textContent='Emin misiniz? Tekrar tıklayın'; } };
+  requestAnimationFrame(()=>{
+    const xMax = Math.max(...R.map(r=>r.T));
+    lineChart($('#rW'), R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], pts:r.wipS})), {xMax, xLabel:'zaman (sn)', yLabel:'adet'});
+    lineChart($('#rL'), R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], pts:r.ltS, dots:true})), {xMax, xLabel:'sevk anı (sn)', yLabel:'sn'});
+    barChart($('#rU'), R[R.length-1].names, R.map((r,i)=>({name:r.label, color:ROUND_COLORS[i%6], vals:r.util})), {yMax:100, unit:'%'});
+  });
+}
+
+/* =====================================================================
+   KATILIMCI (telefon)
+   ===================================================================== */
+let G;
+function getPid(){
+  let p = null;
+  try { p = sessionStorage.getItem('kl_pid'); } catch(e){}
+  if (!p){ p = 'p' + Math.random().toString(36).slice(2,9); try { sessionStorage.setItem('kl_pid', p); } catch(e){} }
+  return p;
+}
+function startPlayer(code, b){
+  G = {code, b, pid:getPid(), name:store.get('kl_name')||'', S:null, recvAt:0, conn:{s:'wait',m:'…'}, view:'', task:null, pending:0, startSent:0};
+  if (!G.name) return renderNameForm();
+  playerConnect();
+}
+function renderNameForm(){
+  $('#app').innerHTML = `<div class="ph"><h2>🏭 Kanban Hattı</h2><p class="mut">Oda: <b class="code">${esc(G.code)}</b></p>
+    <div class="card"><label>Adınız<br><input id="nm" maxlength="18" style="width:100%;font-size:1.2em" placeholder="Örn. Ayşe" value="${esc(G.name)}"></label>
+    <p><button id="ok" class="green" style="width:100%;font-size:1.2em;padding:.8em">Katıl</button></p></div></div>`;
+  const go = ()=>{ const v = $('#nm').value.trim(); if (!v) return $('#nm').focus(); G.name = v.slice(0,18); store.set('kl_name', G.name); playerConnect(); };
+  $('#ok').onclick = go; $('#nm').onkeydown = e=>{ if (e.key==='Enter') go(); };
+}
+function playerSend(o){ o.pid = G.pid; if (G.tr) G.tr.pub('act', o); }
+function playerConnect(){
+  G.tr = createTransport(G.b, G.code, ['state'], (sub,o)=>{
+    if (sub!=='state' || !o || o.v!==1) return;
+    G.S = o; G.recvAt = Date.now(); playerRender();
+  }, (s,m)=>{ G.conn={s,m}; playerRender(); if (s==='ok') playerSend({t:'hb', name:G.name}); });
+  setInterval(()=>playerSend({t:'hb', name:G.name}), 2500);
+  setInterval(playerTick, 100);
+  try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){}
+  document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible'){ try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){} playerSend({t:'hb', name:G.name}); } });
+  playerRender();
+}
+const hostNowEst = () => G.S ? G.S.now + (Date.now() - G.recvAt) : Date.now();
+function myIdx(){ return G.S ? G.S.as.findIndex(a=>a.p===G.pid) : -1; }
+function pCanStart(o,j){
+  if (o.as[j].j) return 'busy';
+  if (j>0 && o.b[j-1]===0) return 'starved';
+  if (o.mode==='kanban' && j<o.n-1 && o.b[j] >= o.K) return 'blocked';
+  return 'ready';
+}
+function genTargets(n){
+  const pts = [];
+  for (let tries=0; pts.length<n && tries<500; tries++){
+    const x = rnd(50,270), y = rnd(52,168);
+    if (pts.every(p=>Math.hypot(p.x-x,p.y-y) > 78)) pts.push({x,y});
+  }
+  while (pts.length<n) pts.push({x:60+pts.length*80, y:110});
+  return pts;
+}
+function playerRender(){
+  const app = $('#app'), o = G.S;
+  if (!o){
+    setHTML(app, `<div class="ph"><h2>🏭 Kanban Hattı</h2><p>Merhaba <b>${esc(G.name)}</b> 👋</p>
+      <div class="waitbox info"><span class="ico">📡</span>Eğitmen ekranına bağlanılıyor…<br><span class="chip ${G.conn.s}" style="margin-top:8px">${esc(G.conn.m)}</span>
+      <p class="small mut">Oda: ${esc(G.code)}</p></div></div>`);
+    G.view = ''; return;
+  }
+  const me = myIdx();
+  const view = o.ph + '|' + (me>=0 ? 's' : 'o');
+  if (G.view !== view){ G.view = view; G.mainKey = ''; buildPlayerShell(); }
+  updatePlayer();
+}
+function buildPlayerShell(){
+  const o = G.S, me = myIdx(), app = $('#app');
+  app._h = null; G.task = null; G.pending = 0;
+  if (o.ph==='lobby' || o.ph==='res'){
+    app.innerHTML = `<div class="ph"><div class="phead"><div class="st">🏭 Kanban Hattı</div><span class="chip" id="pc"></span></div>
+      <div id="lobbyTop"></div>
+      <h3 style="margin:.6em 0 .3em">İstasyon seç</h3><div class="plist" id="plist"></div>
+      <div id="pres" style="margin-top:12px"></div></div>`;
+    $('#plist').addEventListener('click', e=>{ const b = e.target.closest('button[data-j]'); if (!b || b.disabled) return; playerSend({t:'claim', st:+b.dataset.j}); });
+    return;
+  }
+  if (me < 0){ // gözlemci
+    app.innerHTML = `<div class="ph"><div class="phead"><div class="st">👀 Gözlemci</div><span class="tm" id="ptm"></span></div>
+      <div id="prule"></div><div class="pk" id="pk"></div><div class="plist" id="pst" style="margin-top:10px"></div></div>`;
+    return;
+  }
+  app.innerHTML = `<div class="ph">
+    <div class="phead"><div class="st" id="pst"></div><span class="tm" id="ptm"></span></div>
+    <div id="prule"></div>
+    <div class="pio"><div class="box" id="pin"></div><div class="box" id="pout"></div></div>
+    <div class="pmain" id="pmain"></div>
+    <div class="pfoot"><span id="pcount"></span><span id="pconn"></span></div>
+  </div>
+  <div class="cd" id="pcd" style="display:none"><div id="pcdm" style="font-size:6vw;font-weight:800;text-align:center;padding:0 10px"></div><div class="cdp" id="pcdn"></div></div>`;
+  $('#pmain').addEventListener('pointerdown', onMainPointer);
+}
+function updatePlayer(){
+  const o = G.S, me = myIdx();
+  if (o.ph==='lobby' || o.ph==='res'){
+    setHTML($('#pc'), `<span class="chip ${G.conn.s}">● ${esc(G.conn.m)}</span>`);
+    const mine = me>=0 ? o.keys[me] : null;
+    setHTML($('#lobbyTop'), `<div class="card"><div>Merhaba <b>${esc(G.name)}</b> 👋</div>
+      ${mine ? `<div style="font-size:1.3em;font-weight:800;margin-top:6px">${LIB[mine].icon} ${me+1}. ${esc(LIB[mine].name)} ${me===o.bott?'<span class="bn">DARBOĞAZ</span>':''}</div>
+        <div class="small mut">Görevin: ${esc(LIB[mine].task)}. Makine süresi ${o.as[me].mt} sn.</div>` : `<div style="margin-top:6px"><b>Gözlemcisin.</b> Boş bir istasyon seçebilir ya da göstergeleri izleyebilirsin.</div>`}
+      <p class="small mut" style="margin-bottom:0">${o.ph==='res' ? '✅ Tur bitti. Sonuçlar projeksiyonda. Bir sonraki tur için bekleyin.' : 'Eğitmen turu başlatınca bu ekran istasyon paneline dönüşecek. Ekranı açık tutun.'}</p></div>`);
+    setHTML($('#plist'), o.keys.map((k,j)=>{
+      const a = o.as[j], taken = a.p && a.p!==G.pid && !a.bot;
+      return `<button data-j="${j}" class="${a.p===G.pid?'me':''}" ${taken?'disabled':''}>${LIB[k].icon} <b>${j+1}. ${esc(LIB[k].name)}</b> ${j===o.bott?'<span class="bn">DARBOĞAZ</span>':''}<br><span class="small mut">${a.p===G.pid ? '✔ Sen' : a.p ? esc(a.pn) + (a.bot?' (bağlantı yok)':'') : 'Boş'}</span></button>`;
+    }).join('') + (me>=0 ? `<button data-j="-1" style="text-align:center">👀 Gözlemci ol</button>` : ''));
+    setHTML($('#pres'), o.r && o.r.length ? `<div class="card"><b>Tur sonuçları</b><table class="tbl small" style="margin-top:6px"><thead><tr><th>Tur</th><th>Sevk</th><th>Ort. WIP</th><th>Son 5 ÇS</th></tr></thead><tbody>${o.r.map(r=>`<tr><td>${esc(r[0])}</td><td>${r[1]}</td><td>${fmt1(r[2])}</td><td>${r[4]} sn</td></tr>`).join('')}</tbody></table></div>` : '');
+    return;
+  }
+  // run / cd
+  const rem = o.ph==='run' ? o.rem - (Date.now()-G.recvAt) : 0;
+  const tm = $('#ptm'); if (tm) tm.textContent = o.ph==='run' ? fmtClock(rem) : '';
+  const ruleTxt = o.mode==='push'
+    ? '<b>İTME:</b> Girdi varsa hemen işle — boş durmak yok!'
+    : '<b>KANBAN:</b> Yalnızca boş kartın varsa üret. Kart, sonraki istasyon parçanı çekince geri gelir.';
+  setHTML($('#prule'), `<div class="prule ${o.mode}">${ruleTxt}</div>`);
+  if (me < 0){
+    const k = o.k || {sh:0,wip:0,lt:0,l5:0};
+    setHTML($('#pk'), `<div class="box"><div class="l">Sevk edilen</div><div class="v">${k.sh}</div></div><div class="box"><div class="l">Yarı mamul (WIP)</div><div class="v">${k.wip}</div></div>
+      <div class="box"><div class="l">Ort. çevrim süresi</div><div class="v">${k.lt||'—'} sn</div></div><div class="box"><div class="l">Son 5 çevrim süresi</div><div class="v">${k.l5||'—'} sn</div></div>`);
+    setHTML($('#pst'), o.keys.map((kk,j)=>`<div class="card small"><b>${LIB[kk].icon} ${esc(LIB[kk].name)}</b> — ${o.as[j].bot?'🤖':'👤 '+esc(o.as[j].pn)} · işlenen ${o.as[j].c}${j<o.n-1?` · çıkışta bekleyen <b>${o.b[j]}</b>`:''}</div>`).join(''));
+    return;
+  }
+  const key = o.keys[me], L = LIB[key], a = o.as[me];
+  setHTML($('#pst'), `${L.icon} ${esc(L.name)} ${me===o.bott?'<span class="bn">DARBOĞAZ</span>':''}`);
+  // giriş / çıkış kutuları
+  const inQ = me===0 ? null : o.b[me-1];
+  setHTML($('#pin'), `<div class="l">GİRİŞ (önceki istasyondan)</div>` + (me===0 ? `<div class="v">∞</div><div class="small mut">Hammadde deposu</div>`
+    : `<div class="v" style="color:${inQ===0?'var(--starve)':'inherit'}">${inQ}</div><div class="mini">${'<i></i>'.repeat(Math.min(inQ,30))}</div>`));
+  if (me === o.n-1){
+    setHTML($('#pout'), `<div class="l">MÜŞTERİYE SEVK</div><div class="v">${a.c}</div><div class="small mut">🚚 sevk edilen</div>`);
+  } else if (o.mode==='kanban'){
+    const used = o.b[me] + (a.j?1:0);
+    setHTML($('#pout'), `<div class="l">ÇIKIŞIM · KANBAN KARTLARI</div><div class="v">${o.b[me]}</div><div class="kc">${Array.from({length:o.K},(_,i)=>`<b class="${i<used?'u':''}"></b>`).join('')}</div><div class="small mut">${o.K-used>0? (o.K-used)+' boş kart' : 'boş kart yok'}</div>`);
+  } else {
+    setHTML($('#pout'), `<div class="l">ÇIKIŞIM (sonraki istasyonu bekleyen)</div><div class="v">${o.b[me]}</div><div class="mini">${'<i></i>'.repeat(Math.min(o.b[me],30))}</div>`);
+  }
+  setHTML($('#pcount'), `Bu turda işlediğin: <b>${a.c}</b>`);
+  setHTML($('#pconn'), `<span class="chip ${G.conn.s}">● ${esc(G.conn.m)}</span>`);
+  // geri sayım
+  const pcd = $('#pcd');
+  if (o.ph==='cd'){ pcd.style.display='flex'; $('#pcdm').innerHTML = `<span class="badge ${o.mode}">${modeLabel(o.mode,o.K)}</span><br><span style="font-size:.6em">${o.mode==='push'?'Girdi varsa hemen işle!':'Sadece boş kartın varsa üret!'}</span>`; $('#pcdn').textContent = Math.max(1, Math.ceil((o.rem - (Date.now()-G.recvAt))/1000)); }
+  else pcd.style.display='none';
+  updateMain(o, me, a, L);
+}
+function updateMain(o, me, a, L){
+  const main = $('#pmain'); if (!main) return;
+  const job = a.j;
+  // görev durumunu hostla eşitle
+  if (job && job.ph==='m'){
+    if (G.task && G.task.u==='p') G.task.u = job.u;            // iyimser başlangıç onaylandı
+    if (!G.task || G.task.u!==job.u) G.task = {u:job.u, pts:genTargets(L.targets), next:0, sent:0};
+    G.pending = 0;
+  } else if (job && job.ph==='x'){
+    G.task = null; G.pending = 0;
+  } else if (!job){
+    if (G.pending && Date.now()-G.pending > 2500){ G.pending = 0; G.task = null; } // reddedildi
+    if (!G.pending && G.task && G.task.u!=='p') G.task = null;
+  }
+  let k, html;
+  if (o.ph==='cd'){ k='cd'; html = `<div class="waitbox info"><span class="ico">⏱️</span>Hazırlan…</div>`; }
+  else if (a.fb){ k='fb'; html = `<div class="waitbox info"><span class="ico">🤖</span>Bu istasyonu şu an eğitmen bota verdi.</div>`; }
+  else if (G.task){
+    const done = G.task.next >= G.task.pts.length;
+    k = 't' + G.task.u + (done?'d':'');
+    html = done ? `<div class="machine"><div style="font-size:2em">⚙️</div><b>Makineye gönderiliyor…</b></div>` : taskHTML(G.task, L, me===o.bott);
+  } else if (job && job.ph==='x'){
+    k = 'x' + job.u;
+    html = `<div class="machine"><div style="font-size:2.2em">⚙️</div><b>Makine çalışıyor</b><div class="small mut">${esc(L.name)} makine süresi ≈ ${a.mt} sn ${me===o.bott?'(darboğaz)':''}</div><div class="pbar"><i id="mbar" style="width:0%"></i></div><div class="small mut">Bitince parça otomatik olarak ${me===o.n-1?'müşteriye sevk edilir 🚚':'sonraki istasyona gider ➜'}</div></div>`;
+  } else {
+    const cs = pCanStart(o, me);
+    if (cs==='ready'){ k='ready'; html = `<button class="bigbtn" id="go">İŞLE ▶</button><div class="small mut" style="text-align:center">${me===0?'Hammaddeden yeni bir parça başlat':'Girişten bir parça al ve işle'}</div>`; }
+    else if (cs==='starved'){ k='starved'; html = `<div class="waitbox starved"><span class="ico">⏳</span>Girdi yok<br><span style="font-weight:500">Önceki istasyondan parça gelmesini bekliyorsun.</span></div>`; }
+    else if (cs==='blocked'){ k='blocked'; html = `<div class="waitbox blocked"><span class="ico">🟦</span>Kanban kartın yok<br><span style="font-weight:500">Sonraki istasyon parçanı çekene kadar <b>üretme</b>. Kart geri gelince tuş açılacak.</span></div>`; }
+    else { k='busy'; html = `<div class="waitbox info">…</div>`; }
+  }
+  if (G.mainKey !== k){ G.mainKey = k; main.innerHTML = html; }
+}
+function taskHTML(task, L, isB){
+  const plate = `<rect x="18" y="22" width="284" height="176" rx="14" fill="#cfd6de" stroke="#8a96a3" stroke-width="3"/>
+    <rect x="30" y="34" width="260" height="152" rx="10" fill="none" stroke="#b2bcc7" stroke-width="2" stroke-dasharray="6 6"/>`;
+  return `<div class="task"><div class="tt">${L.icon} ${esc(L.task)}</div>
+    <svg viewBox="0 0 320 220">${plate}
+    ${task.pts.map((p,i)=>`<g class="tg ${i<task.next?'done':''} ${i===task.next?'next':''}" data-i="${i}">
+      <circle cx="${p.x}" cy="${p.y}" r="34" fill="transparent"/><circle class="c" cx="${p.x}" cy="${p.y}" r="24"/>
+      <text x="${p.x}" y="${p.y+8}" text-anchor="middle">${i<task.next?'✓':i+1}</text></g>`).join('')}
+    </svg><div class="small mut">Sırayla dokun: ${task.next}/${task.pts.length}${isB?' · ardından uzun makine süresi':''}</div></div>`;
+}
+function onMainPointer(e){
+  const o = G.S, me = myIdx(); if (!o || me<0 || o.ph!=='run') return;
+  if (e.target.closest('#go')){
+    e.preventDefault();
+    G.pending = Date.now(); G.startSent = Date.now();
+    G.task = {u:'p', pts:genTargets(LIB[o.keys[me]].targets), next:0, sent:0};
+    playerSend({t:'start', st:me});
+    try { navigator.vibrate && navigator.vibrate(12); } catch(_){}
+    updatePlayer(); return;
+  }
+  const g = e.target.closest('.tg');
+  if (g && G.task){
+    e.preventDefault();
+    const i = +g.dataset.i;
+    if (i === G.task.next){
+      G.task.next++;
+      try { navigator.vibrate && navigator.vibrate(10); } catch(_){}
+      if (G.task.next >= G.task.pts.length) { trySendDone(); }
+      G.mainKey = ''; updatePlayer();
+    } else if (i > G.task.next){
+      const svg = g.closest('.task'); svg.classList.remove('shake'); void svg.offsetWidth; svg.classList.add('shake');
+    }
+  }
+}
+function trySendDone(){
+  const t = G.task; if (!t || t.next < t.pts.length || t.u==='p') return;
+  if (Date.now() - t.sent > 1000){ t.sent = Date.now(); playerSend({t:'done', st:myIdx(), u:t.u}); }
+}
+function playerTick(){
+  const o = G.S; if (!o) return;
+  const me = myIdx();
+  if (o.ph==='run' && me>=0){
+    const a = o.as[me];
+    // makine ilerleme çubuğu
+    const bar = $('#mbar');
+    if (bar && a.j && a.j.ph==='x'){ const left = a.j.e - hostNowEst(); bar.style.width = Math.max(0, Math.min(100, (1 - left/a.j.d)*100)) + '%'; }
+    // tekrar gönderimler
+    if (G.pending && !a.j && Date.now() - G.startSent > 1000 && Date.now() - G.pending < 2400){ G.startSent = Date.now(); playerSend({t:'start', st:me}); }
+    if (G.task && G.task.next >= G.task.pts.length) trySendDone();
+    const tm = $('#ptm'); if (tm) tm.textContent = fmtClock(o.rem - (Date.now()-G.recvAt));
+  }
+  if (o.ph==='cd' && me>=0){ const n = $('#pcdn'); if (n) n.textContent = Math.max(1, Math.ceil((o.rem - (Date.now()-G.recvAt))/1000)); }
+}
+
+/* ---------------- Başlat ---------------- */
+if (P.get('oda')) startPlayer(P.get('oda').toUpperCase().trim(), P.get('b') || '0');
+else if (P.get('rol') === 'egitmen') startHost(P.get('b') || '0');
+else renderLanding();
+</script>
+</body>
+</html>
